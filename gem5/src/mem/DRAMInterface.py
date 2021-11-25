@@ -660,6 +660,46 @@ class DDR4_2400_4x16(DDR4_2400_16x4):
     IDD5 = '280mA'
     IDD3P1 = '41mA'
 
+class DDR4_2400_4x16_8GB(DDR4_2400_16x4):
+    # 4x16 configuration, 4 devices each with an 16-bit interface
+    device_bus_width = 16
+
+    # Each device has a page (row buffer) size of 2 Kbyte (1K columns x16)
+    device_rowbuffer_size = '2KiB'
+
+    # 4x16 configuration, so 4 devices
+    devices_per_rank = 4
+
+    # Single rank for x16
+    ranks_per_channel = 2
+
+    # DDR4 has 2 (x16) or 4 (x4 and x8) bank groups
+    # Set to 2 for x16 case
+    bank_groups_per_rank = 2
+
+    # DDR4 has 16 banks(x4,x8) and 8 banks(x16) (4 bank groups in all
+    # configurations). Currently we do not capture the additional
+    # constraints incurred by the bank groups
+    banks_per_rank = 8
+
+    # RRD_S (different bank group) for 2K page is MAX(4 CK, 5.3ns)
+    tRRD = '5.3ns'
+
+    # RRD_L (same bank group) for 2K page is MAX(4 CK, 6.4ns)
+    tRRD_L = '6.4ns';
+
+    tXAW = '30ns'
+
+    # Current values from datasheet
+    IDD0 = '80mA'
+    IDD02 = '4mA'
+    IDD2N = '34mA'
+    IDD3N = '47mA'
+    IDD4W = '228mA'
+    IDD4R = '243mA'
+    IDD5 = '280mA'
+    IDD3P1 = '41mA'
+
 # A single LPDDR2-S4 x32 interface (one command/address bus), with
 # default timings based on a LPDDR2-1066 4 Gbit part (Micron MT42L128M32D1)
 # in a 1x32 configuration.

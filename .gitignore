@@ -32,5 +32,5 @@
 *.app
 
 gem5/build/
-GEM5-NVMain_script/out/
-GEM5-NVMain_script/Checkpoint/
+GEM5_Script/out/
+GEM5_Script/Checkpoint/

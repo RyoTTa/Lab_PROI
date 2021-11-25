@@ -105,6 +105,10 @@ class BaseCache : public ClockedObject
     };
 
   public:
+
+    //Adding Part Start
+    std::string params_name;
+    //Adding Part End
     /**
      * Reasons for caches to be blocked.
      */

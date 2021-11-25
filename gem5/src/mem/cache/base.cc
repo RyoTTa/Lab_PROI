@@ -95,7 +95,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       lookupLatency(p.tag_latency),
       dataLatency(p.data_latency),
       forwardLatency(p.tag_latency),
-      fillLatency(p.data_latency),
+      fillLatency(p.fill_latency),
       responseLatency(p.response_latency),
       sequentialAccess(p.sequential_access),
       numTarget(p.tgts_per_mshr),
@@ -122,6 +122,8 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
     // whether the connected requestor is actually snooping or not
 
     tempBlock = new TempCacheBlk(blkSize);
+
+    params_name = p.name;
 
     tags->tagsInit();
     if (prefetcher)
@@ -1226,7 +1228,12 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
-        lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
+        if (params_name == "system.l2"){
+            lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
+        }else{
+            lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
+        }
+        
     }
 
     // Writeback handling is special case.  We can write the block into
