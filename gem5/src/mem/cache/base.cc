@@ -123,6 +123,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
 
     tempBlock = new TempCacheBlk(blkSize);
 
+    //if l2cache, params_name ="system.l2"
     params_name = p.name;
 
     tags->tagsInit();
@@ -704,7 +705,7 @@ BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
                 blk->data + (blkSize / sizeof(uint64_t)));
         }
     }
-
+    
     // Actually perform the data update
     if (cpkt) {
         cpkt->writeDataToBlock(blk->data, blkSize);
@@ -718,6 +719,44 @@ BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
         ppDataUpdate->notify(data_update);
     }
 }
+
+static inline void
+tracePacket(std::string output, uint8_t* Ptr, uint8_t Size)
+{
+    std::cout << output <<std::endl;
+    DDUMPN(Ptr, Size);
+}
+    
+
+void
+BaseCache::updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt, bool has_old_data)
+{
+    DataUpdate data_update(regenerateBlkAddr(blk), blk->isSecure());
+    if (ppDataUpdate->hasListeners()) {
+        if (has_old_data) {
+            data_update.oldData = std::vector<uint64_t>(blk->data, blk->data + (blkSize / sizeof(uint64_t)));
+        }
+    }
+
+    //std::cout << data_update.oldData << std::endl;
+    tracePacket("OldData", blk->data, blkSize);
+
+    // Actually perform the data update
+    if (cpkt) {
+        cpkt->writeDataToBlock(blk->data, blkSize);
+    }
+
+    if (ppDataUpdate->hasListeners()) {
+        if (cpkt) {
+            data_update.newData = std::vector<uint64_t>(blk->data, blk->data + (blkSize / sizeof(uint64_t)));
+        }
+        ppDataUpdate->notify(data_update);
+    }
+    tracePacket("NewData", blk->data, blkSize);
+
+    //std::cout << data_update.newData << std::endl;
+}
+
 
 void
 BaseCache::cmpAndSwap(CacheBlk *blk, PacketPtr pkt)
@@ -1228,17 +1267,18 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
-        if (params_name == "system.l2"){
-            lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
-        }else{
-            lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
-        }
-        
+        lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);    
     }
 
     // Writeback handling is special case.  We can write the block into
     // the cache without having a writeable copy (or any copy at all).
     if (pkt->isWriteback()) {
+        //Adding Parts Start
+        if (params_name == "system.l2"){
+            tempForWrite++;
+            std::cout << "L2, Write : " << tempForWrite << std::endl;
+        }
+        //Adding Parts End
         assert(blkSize == pkt->getSize());
 
         // we could get a clean writeback while we are having
@@ -1256,6 +1296,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             // MSHR. As of now assume a mshr queue search takes as long as
             // a tag lookup for simplicity.
             return true;
+            //yongho, L1으로부터 WritebackClean에 대한 Writeback이 들어오면 무시.
         }
 
         const bool has_old_data = blk && blk->isValid();
@@ -1286,6 +1327,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         if (pkt->cmd == MemCmd::WritebackDirty) {
             // TODO: the coherent cache can assert that the dirty bit is set
             blk->setCoherenceBits(CacheBlk::DirtyBit);
+            // yongho, WritebackDirty 상태라면 blk의 상태를 DirtyBits로 설정
         }
         // if the packet does not have sharers, it is passing
         // writable, and we got the writeback in Modified or Exclusive
@@ -1296,7 +1338,21 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // nothing else to do; writeback doesn't expect response
         assert(!pkt->needsResponse());
 
-        updateBlockData(blk, pkt, has_old_data);
+        // Adding Parts Start
+        
+        if (params_name == "system.l2"){
+            updateBlockDataForL2(blk, pkt, has_old_data);
+        }else{
+            updateBlockData(blk, pkt, has_old_data);
+        }
+        
+        //updateBlockData(blk, pkt, has_old_data);
+        // yongho, Datablk Update 코드?
+        
+        if (params_name == "system.l2"){
+            std::cout << "Has_old_data? : " << has_old_data << std::endl;
+        }
+        // Adding Parts End
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
 
@@ -1393,6 +1449,10 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
+            if(params_name == "system.l2"){
+                tempForRead++;
+                std::cout << "L2, Read : " << tempForRead << std::endl;
+            }
 
             // When a block is compressed, it must first be decompressed
             // before being read. This adds to the access latency.

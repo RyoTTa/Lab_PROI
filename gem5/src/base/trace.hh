@@ -183,6 +183,10 @@ struct StringWrap
             ::gem5::curTick(), name(), data, count, #x); \
 } while (0)
 
+#define DDUMPN(data, count) do {                                          \
+    ::gem5::Trace::getDebugLogger()->dump(::gem5::curTick(), name(), data, count, "");        \
+} while (0)
+
 #define DPRINTF(x, ...) do {                     \
     if (GEM5_UNLIKELY(TRACING_ON && ::gem5::debug::x)) {   \
         ::gem5::Trace::getDebugLogger()->dprintf_flag(   \

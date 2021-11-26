@@ -108,6 +108,8 @@ class BaseCache : public ClockedObject
 
     //Adding Part Start
     std::string params_name;
+    int tempForWrite = 0;
+    int tempForRead = 0;
     //Adding Part End
     /**
      * Reasons for caches to be blocked.
@@ -625,6 +627,9 @@ class BaseCache : public ClockedObject
      * @param has_old_data Whether this block had data previously.
      */
     void updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
+        bool has_old_data);
+
+    void updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt,
         bool has_old_data);
 
     /**
