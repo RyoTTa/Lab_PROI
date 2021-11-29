@@ -109,6 +109,7 @@ class BaseCache : public ClockedObject
     //Adding Part Start
     std::string params_name;
     int tempForWrite = 0;
+    int tempForWriteBack = 0;
     int tempForRead = 0;
     //Adding Part End
     /**
@@ -918,6 +919,8 @@ class BaseCache : public ClockedObject
     /** The latency to fill a cache block */
     const Cycles fillLatency;
 
+    const Cycles writeLatency;
+
     /**
      * The latency of sending reponse to its upper level cache/core on
      * a linefill. The responseLatency parameter captures this
@@ -1054,6 +1057,15 @@ class BaseCache : public ClockedObject
         }
 
         const BaseCache &cache;
+
+        //Adding Part Start
+        /** Number of Writeback. */
+        statistics::Scalar writebackNumber;
+        /** Number of Write. */
+        statistics::Scalar writeNumber;
+        /** Number of Read. */
+        statistics::Scalar readNumber;
+        //Adding Part End
 
         /** Number of hits for demand accesses. */
         statistics::Formula demandHits;

@@ -58,6 +58,7 @@
 #include "mem/packet.hh"
 #include "mem/request.hh"
 #include "sim/cur_tick.hh"
+#include "sim/clocked_object.hh"
 
 namespace gem5
 {
@@ -107,6 +108,8 @@ class CacheBlk : public TaggedEntry
      * meaningful if the block is valid.
      */
     Tick whenReady;
+
+    Cycles whenReadyCycles;
 
   protected:
     /**
@@ -184,6 +187,7 @@ class CacheBlk : public TaggedEntry
         setCoherenceBits(other.coherence);
         setTaskId(other.getTaskId());
         setWhenReady(curTick());
+        setWhenReadyCycles(Cycles(0));
         setRefCount(other.getRefCount());
         setSrcRequestorId(other.getSrcRequestorId());
         std::swap(lockList, other.lockList);
@@ -267,6 +271,11 @@ class CacheBlk : public TaggedEntry
         assert(whenReady != MaxTick);
         return whenReady;
     }
+    Cycles getWhenReadyCycles() const
+    {
+        return whenReadyCycles;
+    }
+
 
     /**
      * Set tick at which block's data will be available for access. The new
@@ -279,6 +288,10 @@ class CacheBlk : public TaggedEntry
     {
         assert(tick >= _tickInserted);
         whenReady = tick;
+    }
+    void setWhenReadyCycles(const Cycles cycle)
+    {
+        whenReadyCycles = cycle;
     }
 
     /** Get the task id associated to this block. */

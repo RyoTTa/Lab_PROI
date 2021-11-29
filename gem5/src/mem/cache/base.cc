@@ -96,6 +96,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       dataLatency(p.data_latency),
       forwardLatency(p.tag_latency),
       fillLatency(p.fill_latency),
+      writeLatency(p.write_latency),
       responseLatency(p.response_latency),
       sequentialAccess(p.sequential_access),
       numTarget(p.tgts_per_mshr),
@@ -111,6 +112,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       addrRanges(p.addr_ranges.begin(), p.addr_ranges.end()),
       system(p.system),
       stats(*this)
+      
 {
     // the MSHR queue has no reserve entries as we check the MSHR
     // queue on every single allocation, whereas the write queue has
@@ -738,8 +740,7 @@ BaseCache::updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt, bool has_ol
         }
     }
 
-    //std::cout << data_update.oldData << std::endl;
-    tracePacket("OldData", blk->data, blkSize);
+    //tracePacket("OldData", blk->data, blkSize);
 
     // Actually perform the data update
     if (cpkt) {
@@ -752,9 +753,7 @@ BaseCache::updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt, bool has_ol
         }
         ppDataUpdate->notify(data_update);
     }
-    tracePacket("NewData", blk->data, blkSize);
-
-    //std::cout << data_update.newData << std::endl;
+    //tracePacket("NewData", blk->data, blkSize);
 }
 
 
@@ -1268,6 +1267,11 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);    
+        if (params_name == "system.l2"){
+            tempForWrite++;
+            stats.writeNumber++;
+            //std::cout << "L2, Write : " << tempForWrite << std::endl;
+        }
     }
 
     // Writeback handling is special case.  We can write the block into
@@ -1275,8 +1279,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     if (pkt->isWriteback()) {
         //Adding Parts Start
         if (params_name == "system.l2"){
-            tempForWrite++;
-            std::cout << "L2, Write : " << tempForWrite << std::endl;
+            tempForWriteBack++;
+            stats.writebackNumber++;
+            //std::cout << "L2, Write-Back : " << tempForWriteBack << std::endl;
         }
         //Adding Parts End
         assert(blkSize == pkt->getSize());
@@ -1348,10 +1353,11 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         
         //updateBlockData(blk, pkt, has_old_data);
         // yongho, Datablk Update 코드?
-        
+        /*
         if (params_name == "system.l2"){
             std::cout << "Has_old_data? : " << has_old_data << std::endl;
         }
+        */
         // Adding Parts End
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
@@ -1361,6 +1367,11 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // soon as the fill is done
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
+        //Adding Part Start
+        if(params_name == "system.l2")
+            blk->setWhenReadyCycles(curCycle()+writeLatency);
+        //Adding Part End
+        
 
         return true;
     } else if (pkt->cmd == MemCmd::CleanEvict) {
@@ -1437,6 +1448,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // soon as the fill is done
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
+        if(params_name == "system.l2")
+            blk->setWhenReadyCycles(curCycle()+writeLatency);
 
         // If this a write-through packet it will be sent to cache below
         return !pkt->writeThrough();
@@ -1449,9 +1462,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
+            if(params_name == "system.l2" && (curCycle() < blk->getWhenReadyCycles())){
+                lat += blk->getWhenReadyCycles() - curCycle();
+            }
             if(params_name == "system.l2"){
                 tempForRead++;
-                std::cout << "L2, Read : " << tempForRead << std::endl;
+                stats.readNumber++;
+                //std::cout << "L2, Read : " << tempForRead << std::endl;
             }
 
             // When a block is compressed, it must first be decompressed
@@ -1589,6 +1606,8 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     // The block will be ready when the payload arrives and the fill is done
     blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
                       pkt->payloadDelay);
+    if(params_name == "system.l2")
+        blk->setWhenReadyCycles(curCycle()+writeLatency);
 
     return blk;
 }
@@ -2177,6 +2196,10 @@ BaseCache::CacheCmdStats::regStatsFromParent()
 
 BaseCache::CacheStats::CacheStats(BaseCache &c)
     : statistics::Group(&c), cache(c),
+
+    ADD_STAT(writeNumber, statistics::units::Count::get(), "number of write"),
+    ADD_STAT(readNumber, statistics::units::Count::get(), "number of read"),
+    ADD_STAT(writebackNumber, statistics::units::Count::get(), "number of writeback"),
 
     ADD_STAT(demandHits, statistics::units::Count::get(),
              "number of demand (read+write) hits"),
