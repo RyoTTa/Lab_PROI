@@ -1272,9 +1272,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     if (pkt->isWrite()) {
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);    
         if (params_name == "system.l2"){
-            tempForWrite++;
             stats.writeNumber++;
-            //std::cout << "L2, Write : " << tempForWrite << std::endl;
         }
     }
 
@@ -1283,9 +1281,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     if (pkt->isWriteback()) {
         //Adding Parts Start
         if (params_name == "system.l2"){
-            tempForWriteBack++;
             stats.writebackNumber++;
-            //std::cout << "L2, Write-Back : " << tempForWriteBack << std::endl;
         }
         //Adding Parts End
         assert(blkSize == pkt->getSize());
@@ -1483,9 +1479,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 }
             }
             if(params_name == "system.l2"){
-                tempForRead++;
                 stats.readNumber++;
-                //std::cout << "L2, Read : " << tempForRead << std::endl;
             }
 
             // When a block is compressed, it must first be decompressed

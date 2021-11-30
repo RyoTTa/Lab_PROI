@@ -108,9 +108,6 @@ class BaseCache : public ClockedObject
 
     //Adding Part Start
     std::string params_name;
-    int tempForWrite = 0;
-    int tempForWriteBack = 0;
-    int tempForRead = 0;
 
     int bankNumber = 0;
 
