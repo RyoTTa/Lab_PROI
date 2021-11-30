@@ -83,6 +83,7 @@ class BaseCache(ClockedObject):
     data_latency = Param.Cycles("Data access latency")
     fill_latency = Param.Cycles("Data fill latency")
     write_latency = Param.Cycles("Data write latency")
+    bank_number = Param.Cycles("Number of bank in cache")
     response_latency = Param.Cycles("Latency for the return path on a miss");
 
     warmup_percentage = Param.Percent(0,

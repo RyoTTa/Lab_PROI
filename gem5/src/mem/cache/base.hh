@@ -111,6 +111,10 @@ class BaseCache : public ClockedObject
     int tempForWrite = 0;
     int tempForWriteBack = 0;
     int tempForRead = 0;
+
+    int bankNumber = 0;
+
+    Cycles *bankAvailableCycles;
     //Adding Part End
     /**
      * Reasons for caches to be blocked.
@@ -1065,6 +1069,8 @@ class BaseCache : public ClockedObject
         statistics::Scalar writeNumber;
         /** Number of Read. */
         statistics::Scalar readNumber;
+        /** Number of Handlefill. */
+        statistics::Scalar handlefillNumber;
         //Adding Part End
 
         /** Number of hits for demand accesses. */

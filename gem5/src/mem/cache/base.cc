@@ -94,8 +94,9 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       blkSize(blk_size),
       lookupLatency(p.tag_latency),
       dataLatency(p.data_latency),
-      forwardLatency(p.tag_latency),
-      fillLatency(p.fill_latency),
+      //forwardLatency(p.tag_latency),
+      forwardLatency(p.write_latency),
+      fillLatency(p.write_latency),
       writeLatency(p.write_latency),
       responseLatency(p.response_latency),
       sequentialAccess(p.sequential_access),
@@ -111,6 +112,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       missCount(p.max_miss_count),
       addrRanges(p.addr_ranges.begin(), p.addr_ranges.end()),
       system(p.system),
+      bankNumber(p.bank_number),
       stats(*this)
       
 {
@@ -139,6 +141,8 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
         "Compressed cache %s does not have a compression algorithm", name());
     if (compressor)
         compressor->setCache(this);
+    
+    bankAvailableCycles = new Cycles[p.bank_number];
 }
 
 BaseCache::~BaseCache()
@@ -1347,18 +1351,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         
         if (params_name == "system.l2"){
             updateBlockDataForL2(blk, pkt, has_old_data);
+            //std::cout << "Update Bank Number : " << (((pkt->getAddr()/8)/8)%8)<< std::endl;
         }else{
             updateBlockData(blk, pkt, has_old_data);
         }
         
+        
         //updateBlockData(blk, pkt, has_old_data);
-        // yongho, Datablk Update 코드?
-        /*
-        if (params_name == "system.l2"){
-            std::cout << "Has_old_data? : " << has_old_data << std::endl;
-        }
-        */
-        // Adding Parts End
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
 
@@ -1368,8 +1367,11 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
         //Adding Part Start
+        /*
         if(params_name == "system.l2")
             blk->setWhenReadyCycles(curCycle()+writeLatency);
+            
+        */
         //Adding Part End
         
 
@@ -1448,9 +1450,17 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // soon as the fill is done
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
+        /*
         if(params_name == "system.l2")
             blk->setWhenReadyCycles(curCycle()+writeLatency);
-
+        */
+        if(params_name == "system.l2"){
+            if(bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] <= curCycle()){
+                bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] = curCycle() + writeLatency;
+            }else if(bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] > curCycle()){
+                bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] += writeLatency;
+            }
+        }
         // If this a write-through packet it will be sent to cache below
         return !pkt->writeThrough();
     } else if (blk && (pkt->needsWritable() ?
@@ -1462,8 +1472,15 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
+            /*
             if(params_name == "system.l2" && (curCycle() < blk->getWhenReadyCycles())){
                 lat += blk->getWhenReadyCycles() - curCycle();
+            }
+            */
+            if(params_name == "system.l2"){
+                if(bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] >= curCycle()){
+                    lat += (bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] - curCycle());
+                }
             }
             if(params_name == "system.l2"){
                 tempForRead++;
@@ -1606,8 +1623,22 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     // The block will be ready when the payload arrives and the fill is done
     blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
                       pkt->payloadDelay);
+
+    if(params_name == "system.l2"){
+        std::cout << "Update Bank Number : " << (((pkt->getAddr()/8)/8)%8) << std::endl;
+    }
+    /*
     if(params_name == "system.l2")
         blk->setWhenReadyCycles(curCycle()+writeLatency);
+    */
+    if(params_name == "system.l2"){
+        if(bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] <= curCycle()){
+            bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] = curCycle() + writeLatency;
+        }else if(bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] > curCycle()){
+            bankAvailableCycles[(((pkt->getAddr()/8)/8)%8)] += writeLatency;
+        }
+    }
+    stats.handlefillNumber++;
 
     return blk;
 }
@@ -2200,6 +2231,8 @@ BaseCache::CacheStats::CacheStats(BaseCache &c)
     ADD_STAT(writeNumber, statistics::units::Count::get(), "number of write"),
     ADD_STAT(readNumber, statistics::units::Count::get(), "number of read"),
     ADD_STAT(writebackNumber, statistics::units::Count::get(), "number of writeback"),
+    ADD_STAT(handlefillNumber, statistics::units::Count::get(), "number of handlefill"),
+    
 
     ADD_STAT(demandHits, statistics::units::Count::get(),
              "number of demand (read+write) hits"),
