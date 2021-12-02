@@ -67,11 +67,11 @@ class L1_DCache(L1Cache):
 
 class L2Cache(Cache):
     assoc = 16
-    tag_latency = 20
-    data_latency = 20
-    response_latency = 20
-    fill_latency = 20
-    write_latency = 20
+    tag_latency = 60
+    data_latency = 60
+    response_latency = 60
+    fill_latency = 60
+    write_latency = 60
     mshrs = 20
     tgts_per_mshr = 12
     bank_number = 8
