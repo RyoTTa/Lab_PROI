@@ -94,8 +94,8 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       blkSize(blk_size),
       lookupLatency(p.tag_latency),
       dataLatency(p.data_latency),
-      //forwardLatency(p.tag_latency),
-      forwardLatency(p.write_latency),
+      forwardLatency(p.tag_latency),
+      //forwardLatency(p.write_latency),
       fillLatency(p.write_latency),
       writeLatency(p.write_latency),
       responseLatency(p.write_latency),
@@ -1384,9 +1384,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             blk->setWhenReadyCycles(curCycle()+writeLatency);
             
         */
-        /*
+        
         if(params_name == "system.l2"){
-            uint64_t mask = 7;
+            uint64_t mask = bankNumber - 1;
             uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             //std::cout << "Update Bank Number : " << bankAddr << std::endl;
             if(bankAvailableCycles[bankAddr] <= curCycle()){
@@ -1397,7 +1397,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 //lat += bankAvailableCycles[bankAddr] - curCycle();
             }
         }
-        */
+        
 
         //Adding Part End
 
@@ -1496,15 +1496,15 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 lat += blk->getWhenReadyCycles() - curCycle();
             }
             */
-            /*
+            
             if(params_name == "system.l2"){
-                uint64_t mask = 7;
+                uint64_t mask = bankNumber - 1;
                 uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
                 if(bankAvailableCycles[bankAddr] >= curCycle()){
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
             }
-            */
+            
             if(params_name == "system.l2"){
                 stats.readNumber++;
             }
@@ -1645,9 +1645,9 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
                       pkt->payloadDelay);
 
-    /*
+    
     if(params_name == "system.l2"){
-        uint64_t mask = 7;
+        uint64_t mask = bankNumber - 1;
         uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
 
         //std::cout << "Update Bank Number : " << bankAddr << std::endl;
@@ -1657,7 +1657,7 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
             bankAvailableCycles[bankAddr] += writeLatency;
         }
     }
-    */
+    
     stats.handlefillNumber++;
 
     return blk;
