@@ -98,8 +98,8 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       //forwardLatency(p.write_latency),
       fillLatency(p.write_latency),
       writeLatency(p.write_latency),
-      responseLatency(p.write_latency),
-      //responseLatency(p.response_latency),
+      //responseLatency(p.write_latency),
+      responseLatency(p.response_latency),
       sequentialAccess(p.sequential_access),
       numTarget(p.tgts_per_mshr),
       forwardSnoops(true),
@@ -1196,10 +1196,19 @@ BaseCache::calculateAccessLatency(const CacheBlk* blk, const uint32_t delay,
         // access latency on top of when the block is ready to be accessed.
         const Tick tick = curTick() + delay;
         const Tick when_ready = blk->getWhenReady();
+        //Adding Part Start
+        /*
         if (when_ready > tick &&
             ticksToCycles(when_ready - tick) > lat) {
             lat += ticksToCycles(when_ready - tick);
         }
+        */
+        if (when_ready > tick &&
+            ticksToCycles(when_ready - tick) > lat &&
+            params_name != 'system.l2') {
+            lat += ticksToCycles(when_ready - tick);
+        }
+        //Adding Part End
     } else {
         // In case of a miss, we neglect the data access in a parallel
         // configuration (i.e., the data access will be stopped as soon as
@@ -1387,7 +1396,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         
         if(params_name == "system.l2"){
             uint64_t mask = bankNumber - 1;
-            uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            uint64_t bankAddr = 0;
             //std::cout << "Update Bank Number : " << bankAddr << std::endl;
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
@@ -1476,6 +1486,20 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // soon as the fill is done
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
+
+        if(params_name == "system.l2"){
+            uint64_t mask = bankNumber - 1;
+            //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            uint64_t bankAddr = 0;
+            //std::cout << "Update Bank Number : " << bankAddr << std::endl;
+            if(bankAvailableCycles[bankAddr] <= curCycle()){
+                bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
+                //lat += writeLatency;
+            }else if(bankAvailableCycles[bankAddr] > curCycle()){
+                bankAvailableCycles[bankAddr] += writeLatency;
+                //lat += bankAvailableCycles[bankAddr] - curCycle();
+            }
+        }
         /*
         if(params_name == "system.l2")
             blk->setWhenReadyCycles(curCycle()+writeLatency);
@@ -1499,7 +1523,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             
             if(params_name == "system.l2"){
                 uint64_t mask = bankNumber - 1;
-                uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+                //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+                uint64_t bankAddr = 0;
                 if(bankAvailableCycles[bankAddr] >= curCycle()){
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
@@ -1648,7 +1673,8 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     
     if(params_name == "system.l2"){
         uint64_t mask = bankNumber - 1;
-        uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+        //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+        uint64_t bankAddr = 0;
 
         //std::cout << "Update Bank Number : " << bankAddr << std::endl;
         if(bankAvailableCycles[bankAddr] <= curCycle()){
