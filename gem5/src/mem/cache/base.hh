@@ -1068,6 +1068,8 @@ class BaseCache : public ClockedObject
         statistics::Scalar readNumber;
         /** Number of Handlefill. */
         statistics::Scalar handlefillNumber;
+        /** Number of Service MSHR. */
+        statistics::Scalar serviceMSHRNumber;
         //Adding Part End
 
         /** Number of hits for demand accesses. */

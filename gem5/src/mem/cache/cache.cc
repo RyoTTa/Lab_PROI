@@ -698,6 +698,7 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
         Packet *tgt_pkt = target.pkt;
         switch (target.source) {
           case MSHR::Target::FromCPU:
+            stats.serviceMSHRNumber++;
             Tick completion_time;
             // Here we charge on completion_time the delay of the xbar if the
             // packet comes from it, charged on headerDelay.

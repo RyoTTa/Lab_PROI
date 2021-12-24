@@ -1205,7 +1205,7 @@ BaseCache::calculateAccessLatency(const CacheBlk* blk, const uint32_t delay,
         */
         if (when_ready > tick &&
             ticksToCycles(when_ready - tick) > lat &&
-            params_name != 'system.l2') {
+            (params_name != "system.l2")) {
             lat += ticksToCycles(when_ready - tick);
         }
         //Adding Part End
@@ -2278,7 +2278,9 @@ BaseCache::CacheStats::CacheStats(BaseCache &c)
     ADD_STAT(readNumber, statistics::units::Count::get(), "number of read"),
     ADD_STAT(writebackNumber, statistics::units::Count::get(), "number of writeback"),
     ADD_STAT(handlefillNumber, statistics::units::Count::get(), "number of handlefill"),
-    
+    ADD_STAT(serviceMSHRNumber, statistics::units::Count::get(), "number of handlefill"),
+
+
 
     ADD_STAT(demandHits, statistics::units::Count::get(),
              "number of demand (read+write) hits"),
