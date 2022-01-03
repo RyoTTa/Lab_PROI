@@ -774,7 +774,7 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 // from lower level caches/memory to an upper level cache or
                 // the core.
                 
-
+                
                 //Adding part start
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
@@ -787,7 +787,8 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                     }
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
                         bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
-                        completion_time += clockEdge(bankBlockLat + responseLatency)+
+                        bankBlockLat += responseLatency;
+                        completion_time += clockEdge(bankBlockLat) +
                         (transfer_offset ? pkt->payloadDelay : 0);
                     }else{
                         completion_time += clockEdge(responseLatency) +
@@ -801,7 +802,13 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                     completion_time += clockEdge(responseLatency) +
                     (transfer_offset ? pkt->payloadDelay : 0);
                 }
+                
                 //Adding part end
+                
+                /*
+                completion_time += clockEdge(responseLatency) +
+                    (transfer_offset ? pkt->payloadDelay : 0);
+                */
 
                 assert(!tgt_pkt->req->isUncacheable());
 
@@ -817,6 +824,7 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 // responseLatency is the latency of the return path
                 // from lower level caches/memory to an upper level cache or
                 // the core.
+                
                 //Adding part start
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
@@ -829,7 +837,8 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                     }
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
                         bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
-                        completion_time += clockEdge(bankBlockLat + responseLatency) +
+                        bankBlockLat += responseLatency;
+                        completion_time += clockEdge(bankBlockLat) +
                         pkt->payloadDelay;
                     }else{
                         completion_time += clockEdge(responseLatency) +
@@ -844,6 +853,12 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         pkt->payloadDelay;
                 }
                 //Adding part end
+                
+
+                /*
+                completion_time += clockEdge(responseLatency) +
+                    pkt->payloadDelay;
+                */
 
                 tgt_pkt->req->setExtraData(0);
             } else {
@@ -865,8 +880,40 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 //Adding part start
                 //이 부분에서는 cache fill을 진행하지 않는다?
                 //Adding part end
+
+                //Adding part start
+                if(params_name == "system.l2"){
+                    Cycles bankBlockLat = Cycles(0);
+                    uint64_t bankAddr = 0;
+                    if (bankNumber == 1)
+                        bankAddr = 0;
+                    else {
+                        uint64_t mask = bankNumber - 1;
+                        bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
+                    }
+                    if(bankAvailableCycles[bankAddr] >= curCycle()){
+                        bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
+                        bankBlockLat += responseLatency;
+                        completion_time += clockEdge(bankBlockLat) +
+                        pkt->payloadDelay;
+                    }else{
+                        completion_time += clockEdge(responseLatency) +
+                        pkt->payloadDelay;
+                    }
+                    //std::cout << "bankBLockLat  " <<bankBlockLat << std::endl;
+                    //std::cout << "completion_time  " <<completion_time << std::endl;
+                    //std::cout << "clockEdge(bankBlockLat)  " <<clockEdge(bankBlockLat) << std::endl;
+                    //std::cout << "clockEdge(responseLatency)  " <<clockEdge(responseLatency) << std::endl;
+                }else{
+                    completion_time += clockEdge(responseLatency) +
+                    pkt->payloadDelay;
+                }
+                
+                //Adding part end
+                /*
                 completion_time += clockEdge(responseLatency) +
                     pkt->payloadDelay;
+                */
                 if (!is_error) {
                     if (pkt->isRead()) {
                         // sanity check
