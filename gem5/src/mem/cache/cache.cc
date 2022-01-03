@@ -773,8 +773,35 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 // responseLatency is the latency of the return path
                 // from lower level caches/memory to an upper level cache or
                 // the core.
-                completion_time += clockEdge(responseLatency) +
+                
+
+                //Adding part start
+                if(params_name == "system.l2"){
+                    Cycles bankBlockLat = Cycles(0);
+                    uint64_t bankAddr = 0;
+                    if (bankNumber == 1)
+                        bankAddr = 0;
+                    else {
+                        uint64_t mask = bankNumber - 1;
+                        bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
+                    }
+                    if(bankAvailableCycles[bankAddr] >= curCycle()){
+                        bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
+                        completion_time += clockEdge(bankBlockLat + responseLatency)+
+                        (transfer_offset ? pkt->payloadDelay : 0);
+                    }else{
+                        completion_time += clockEdge(responseLatency) +
+                        (transfer_offset ? pkt->payloadDelay : 0);
+                    }
+                    //std::cout << "bankBLockLat  " <<bankBlockLat << std::endl;
+                    //std::cout << "completion_time  " <<completion_time << std::endl;
+                    //std::cout << "clockEdge(bankBlockLat)  " <<clockEdge(bankBlockLat) << std::endl;
+                    //std::cout << "clockEdge(responseLatency)  " <<clockEdge(responseLatency) << std::endl;
+                }else{
+                    completion_time += clockEdge(responseLatency) +
                     (transfer_offset ? pkt->payloadDelay : 0);
+                }
+                //Adding part end
 
                 assert(!tgt_pkt->req->isUncacheable());
 
@@ -790,8 +817,34 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 // responseLatency is the latency of the return path
                 // from lower level caches/memory to an upper level cache or
                 // the core.
-                completion_time += clockEdge(responseLatency) +
-                    pkt->payloadDelay;
+                //Adding part start
+                if(params_name == "system.l2"){
+                    Cycles bankBlockLat = Cycles(0);
+                    uint64_t bankAddr = 0;
+                    if (bankNumber == 1)
+                        bankAddr = 0;
+                    else {
+                        uint64_t mask = bankNumber - 1;
+                        bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
+                    }
+                    if(bankAvailableCycles[bankAddr] >= curCycle()){
+                        bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
+                        completion_time += clockEdge(bankBlockLat + responseLatency) +
+                        pkt->payloadDelay;
+                    }else{
+                        completion_time += clockEdge(responseLatency) +
+                        pkt->payloadDelay;
+                    }
+                    //std::cout << "bankBLockLat  " <<bankBlockLat << std::endl;
+                    //std::cout << "completion_time  " <<completion_time << std::endl;
+                    //std::cout << "clockEdge(bankBlockLat)  " <<clockEdge(bankBlockLat) << std::endl;
+                    //std::cout << "clockEdge(responseLatency)  " <<clockEdge(responseLatency) << std::endl;
+                }else{
+                    completion_time += clockEdge(responseLatency) +
+                        pkt->payloadDelay;
+                }
+                //Adding part end
+
                 tgt_pkt->req->setExtraData(0);
             } else {
                 if (is_invalidate && blk && blk->isValid()) {
@@ -808,6 +861,10 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 // not a cache fill, just forwarding response
                 // responseLatency is the latency of the return path
                 // from lower level cahces/memory to the core.
+
+                //Adding part start
+                //이 부분에서는 cache fill을 진행하지 않는다?
+                //Adding part end
                 completion_time += clockEdge(responseLatency) +
                     pkt->payloadDelay;
                 if (!is_error) {
@@ -848,7 +905,10 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
             }
             // Reset the bus additional time as it is now accounted for
             tgt_pkt->headerDelay = tgt_pkt->payloadDelay = 0;
+            //Adding part start
+            //만약 L2라면 cpuSidePort는 L2XBar의 master로 연결되고 completion_time이 Latency로 정의됨
             cpuSidePort.schedTimingResp(tgt_pkt, completion_time);
+            //Adding part end
             break;
 
           case MSHR::Target::FromPrefetcher:

@@ -143,7 +143,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
     if (compressor)
         compressor->setCache(this);
     
-    bankAvailableCycles = new Cycles[p.bank_number];
+    bankAvailableCycles = new Cycles[bankNumber];
 }
 
 BaseCache::~BaseCache()
@@ -536,6 +536,11 @@ BaseCache::recvTimingResp(PacketPtr pkt)
         // were deferred as we couldn't guarrantee a writable copy
         mshr->promoteWritable();
     }
+
+    //Adding part start
+    //handlefillNumber와 serviceMSHRNumber는 MSHR의 크기 차이만큼 난다.
+    //L2에 대한 Read Miss로 인해 Fill이 일어나고(Update BankAvailableCycles), MSHR을 이용해 상위 레벨 캐시(L1)에 데이터를 전송한다. 이에 필요한 latency가 response latency
+    //Adding part end
 
     serviceMSHRTargets(mshr, pkt, blk);
 
@@ -1395,9 +1400,14 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         */
         
         if(params_name == "system.l2"){
-            uint64_t mask = bankNumber - 1;
-            //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             uint64_t bankAddr = 0;
+
+            if (bankNumber == 1)
+                bankAddr = 0;
+            else {
+                uint64_t mask = bankNumber - 1;
+                bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            }
             //std::cout << "Update Bank Number : " << bankAddr << std::endl;
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
@@ -1488,9 +1498,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
 
         if(params_name == "system.l2"){
-            uint64_t mask = bankNumber - 1;
-            //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             uint64_t bankAddr = 0;
+            if (bankNumber == 1)
+                bankAddr = 0;
+            else {
+                uint64_t mask = bankNumber - 1;
+                bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            }
             //std::cout << "Update Bank Number : " << bankAddr << std::endl;
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
@@ -1522,9 +1536,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             */
             
             if(params_name == "system.l2"){
-                uint64_t mask = bankNumber - 1;
-                //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
                 uint64_t bankAddr = 0;
+                if (bankNumber == 1)
+                    bankAddr = 0;
+                else {
+                    uint64_t mask = bankNumber - 1;
+                    bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+                }
                 if(bankAvailableCycles[bankAddr] >= curCycle()){
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
@@ -1672,10 +1690,13 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
 
     
     if(params_name == "system.l2"){
-        uint64_t mask = bankNumber - 1;
-        //uint64_t bankAddr = ((pkt->getAddr() >> 6 ) & mask);
         uint64_t bankAddr = 0;
-
+        if (bankNumber == 1)
+            bankAddr = 0;
+        else {
+            uint64_t mask = bankNumber - 1;
+            bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+        }
         //std::cout << "Update Bank Number : " << bankAddr << std::endl;
         if(bankAvailableCycles[bankAddr] <= curCycle()){
             bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
@@ -2278,7 +2299,7 @@ BaseCache::CacheStats::CacheStats(BaseCache &c)
     ADD_STAT(readNumber, statistics::units::Count::get(), "number of read"),
     ADD_STAT(writebackNumber, statistics::units::Count::get(), "number of writeback"),
     ADD_STAT(handlefillNumber, statistics::units::Count::get(), "number of handlefill"),
-    ADD_STAT(serviceMSHRNumber, statistics::units::Count::get(), "number of handlefill"),
+    ADD_STAT(serviceMSHRNumber, statistics::units::Count::get(), "number of ServiceMSHR"),
 
 
 
