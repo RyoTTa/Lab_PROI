@@ -1411,10 +1411,10 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             //std::cout << "Update Bank Number : " << bankAddr << std::endl;
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
-                //lat += writeLatency;
+                lat += writeLatency;
             }else if(bankAvailableCycles[bankAddr] > curCycle()){
                 bankAvailableCycles[bankAddr] += writeLatency;
-                //lat += bankAvailableCycles[bankAddr] - curCycle();
+                lat += bankAvailableCycles[bankAddr] - curCycle();
             }
         }
         

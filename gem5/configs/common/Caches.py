@@ -70,11 +70,11 @@ class L2Cache(Cache):
     tag_latency = 20
     data_latency = 20
     response_latency = 20
-    fill_latency = 20
-    write_latency = 20
+    fill_latency = 100
+    write_latency = 100
     mshrs = 20
     tgts_per_mshr = 12
-    bank_number = 1
+    bank_number = 4
     write_buffers = 8
 
 class IOCache(Cache):
