@@ -1254,6 +1254,21 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // takes into account the bus delay.
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
 
+        //Adding Part Start
+        if(params_name == "system.l2"){
+            uint64_t bankAddr = 0;
+            if (bankNumber == 1)
+                bankAddr = 0;
+            else {
+                uint64_t mask = bankNumber - 1;
+                bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            }
+            if(bankAvailableCycles[bankAddr] >= curCycle()){
+                lat += bankAvailableCycles[bankAddr] - curCycle();
+            }
+        }
+        //Adding Part End
+
         return false;
     }
 
@@ -1286,6 +1301,20 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
                 // A clean evict does not need to access the data array
                 lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
+                //Adding Part Start
+                if(params_name == "system.l2"){
+                    uint64_t bankAddr = 0;
+                    if (bankNumber == 1)
+                        bankAddr = 0;
+                    else {
+                        uint64_t mask = bankNumber - 1;
+                        bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+                    }
+                    if(bankAvailableCycles[bankAddr] >= curCycle()){
+                        lat += bankAvailableCycles[bankAddr] - curCycle();
+                    }
+                }
+                //Adding Part End
 
                 return true;
             } else {
@@ -1301,9 +1330,12 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
-        lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);    
+        
         if (params_name == "system.l2"){
+            lat = calculateTagOnlyLatency(pkt->headerDelay, Cycles(0)); 
             stats.writeNumber++;
+        }else{
+            lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);    
         }
     }
 
@@ -1426,6 +1458,21 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // A CleanEvict does not need to access the data array
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
 
+        //Adding Part Start
+        if(params_name == "system.l2"){
+            uint64_t bankAddr = 0;
+            if (bankNumber == 1)
+                bankAddr = 0;
+            else {
+                uint64_t mask = bankNumber - 1;
+                bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            }
+            if(bankAvailableCycles[bankAddr] >= curCycle()){
+                lat += bankAvailableCycles[bankAddr] - curCycle();
+            }
+        }
+        //Adding Part End
+
         if (blk) {
             // Found the block in the tags, need to stop CleanEvict from
             // propagating further down the hierarchy. Returning true will
@@ -1497,6 +1544,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
 
+        //Adding Part Start
         if(params_name == "system.l2"){
             uint64_t bankAddr = 0;
             if (bankNumber == 1)
@@ -1505,15 +1553,15 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 uint64_t mask = bankNumber - 1;
                 bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             }
-            //std::cout << "Update Bank Number : " << bankAddr << std::endl;
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
-                //lat += writeLatency;
+                lat += writeLatency;
             }else if(bankAvailableCycles[bankAddr] > curCycle()){
                 bankAvailableCycles[bankAddr] += writeLatency;
-                //lat += bankAvailableCycles[bankAddr] - curCycle();
+                lat += bankAvailableCycles[bankAddr] - curCycle();
             }
         }
+        //Adding Part End
         /*
         if(params_name == "system.l2")
             blk->setWhenReadyCycles(curCycle()+writeLatency);
@@ -1534,7 +1582,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 lat += blk->getWhenReadyCycles() - curCycle();
             }
             */
-            
+
+            //Adding Part Start
             if(params_name == "system.l2"){
                 uint64_t bankAddr = 0;
                 if (bankNumber == 1)
@@ -1551,6 +1600,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if(params_name == "system.l2"){
                 stats.readNumber++;
             }
+            //Adding Part End
 
             // When a block is compressed, it must first be decompressed
             // before being read. This adds to the access latency.
@@ -1559,6 +1609,21 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             }
         } else {
             lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
+
+            //Adding Part Start
+            if(params_name == "system.l2"){
+                uint64_t bankAddr = 0;
+                if (bankNumber == 1)
+                    bankAddr = 0;
+                else {
+                    uint64_t mask = bankNumber - 1;
+                    bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+                }
+                if(bankAvailableCycles[bankAddr] >= curCycle()){
+                    lat += bankAvailableCycles[bankAddr] - curCycle();
+                }
+            }
+            //Adding Part End
         }
 
         satisfyRequest(pkt, blk);

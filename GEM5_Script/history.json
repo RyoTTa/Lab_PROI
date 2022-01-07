@@ -706,6 +706,27 @@
 			"time": "15:50",
 			"foldername": "500M_Bank4_Latency100",
 			"description": ""
+		},
+		{
+			"id": "1641546211538",
+			"date": "01-07-22",
+			"time": "18:03",
+			"foldername": "500M_Bank4_Latency100_AddingWriteBack'slat",
+			"description": ""
+		},
+		{
+			"id": "1641548293478",
+			"date": "01-07-22",
+			"time": "18:38",
+			"foldername": "500M_Bank4_Latency100_AddingWriteBackLat",
+			"description": ""
+		},
+		{
+			"id": "1641548366881",
+			"date": "01-07-22",
+			"time": "18:39",
+			"foldername": "500M_Bank4_Latency20_AddingWriteBackLat",
+			"description": ""
 		}
 	]
 }
