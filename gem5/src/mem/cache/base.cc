@@ -401,6 +401,31 @@ BaseCache::recvTimingReq(PacketPtr pkt)
 
         handleTimingReqHit(pkt, blk, request_time);
     } else {
+        //Adding part start
+        if(params_name == "system.l2"){
+            Cycles bankBlockLat = Cycles(0);
+            uint64_t bankAddr = 0;
+            if (bankNumber == 1)
+                bankAddr = 0;
+            else {
+                uint64_t mask = bankNumber - 1;
+                bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+            }
+            if(bankAvailableCycles[bankAddr] >= curCycle()){
+                bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
+                bankBlockLat += forwardLatency;
+                forward_time = clockEdge(bankBlockLat) +
+                pkt->headerDelay;
+            }else{
+                forward_time = clockEdge(forwardLatency) +
+                pkt->headerDelay;
+            }
+            //std::cout << "bankBLockLat  " <<bankBlockLat << std::endl;
+            //std::cout << "completion_time  " <<completion_time << std::endl;
+            //std::cout << "clockEdge(bankBlockLat)  " <<clockEdge(bankBlockLat) << std::endl;
+            //std::cout << "clockEdge(responseLatency)  " <<clockEdge(responseLatency) << std::endl;
+        }
+        //Adding part end
         handleTimingReqMiss(pkt, blk, forward_time, request_time);
         /*
         if(params_name == "system.l2" && pkt->isRead()){
@@ -1638,6 +1663,21 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     incMissCount(pkt);
 
     lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
+
+    //Adding Part Start
+    if(params_name == "system.l2"){
+        uint64_t bankAddr = 0;
+        if (bankNumber == 1)
+            bankAddr = 0;
+        else {
+            uint64_t mask = bankNumber - 1;
+            bankAddr = ((pkt->getAddr() >> 6 ) & mask);
+        }
+        if(bankAvailableCycles[bankAddr] >= curCycle()){
+            lat += bankAvailableCycles[bankAddr] - curCycle();
+        }
+    }
+    //Adding Part End
 
     if (!blk && pkt->isLLSC() && pkt->isWrite()) {
         // complete miss on store conditional... just give up now

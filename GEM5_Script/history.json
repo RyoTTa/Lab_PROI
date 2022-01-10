@@ -727,6 +727,20 @@
 			"time": "18:39",
 			"foldername": "500M_Bank4_Latency20_AddingWriteBackLat",
 			"description": ""
+		},
+		{
+			"id": "1641555074056",
+			"date": "01-07-22",
+			"time": "20:31",
+			"foldername": "500M_Bank4_Latency100_AddingAllLatInacccess",
+			"description": ""
+		},
+		{
+			"id": "1641556970118",
+			"date": "01-07-22",
+			"time": "21:02",
+			"foldername": "500M_Bank4_Latency20_AddingAllLatInacccess",
+			"description": ""
 		}
 	]
 }
