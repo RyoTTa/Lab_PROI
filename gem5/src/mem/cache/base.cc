@@ -1620,7 +1620,16 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 if(bankAvailableCycles[bankAddr] >= curCycle()){
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
+
+                /*
+                if(bankAvailableCycles[bankAddr] <= curCycle()){
+                    bankAvailableCycles[bankAddr] = curCycle() + dataLatency;
+                }else if(bankAvailableCycles[bankAddr] > curCycle()){
+                    bankAvailableCycles[bankAddr] += dataLatency;
+                }
+                */
             }
+            
             
             if(params_name == "system.l2"){
                 stats.readNumber++;
@@ -1647,6 +1656,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 if(bankAvailableCycles[bankAddr] >= curCycle()){
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
+                /*
+                if(bankAvailableCycles[bankAddr] <= curCycle()){
+                    bankAvailableCycles[bankAddr] = curCycle() + dataLatency;
+                }else if(bankAvailableCycles[bankAddr] > curCycle()){
+                    bankAvailableCycles[bankAddr] += dataLatency;
+                }
+                */
             }
             //Adding Part End
         }
@@ -1665,6 +1681,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
 
     //Adding Part Start
+    /*
     if(params_name == "system.l2"){
         uint64_t bankAddr = 0;
         if (bankNumber == 1)
@@ -1676,7 +1693,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         if(bankAvailableCycles[bankAddr] >= curCycle()){
             lat += bankAvailableCycles[bankAddr] - curCycle();
         }
+        if(bankAvailableCycles[bankAddr] <= curCycle()){
+            bankAvailableCycles[bankAddr] = curCycle() + dataLatency;
+        }else if(bankAvailableCycles[bankAddr] > curCycle()){
+            bankAvailableCycles[bankAddr] += dataLatency;
+        }
     }
+    */
     //Adding Part End
 
     if (!blk && pkt->isLLSC() && pkt->isWrite()) {

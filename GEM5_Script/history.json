@@ -741,6 +741,83 @@
 			"time": "21:02",
 			"foldername": "500M_Bank4_Latency20_AddingAllLatInacccess",
 			"description": ""
+		},
+		{
+			"id": "1641780372310",
+			"date": "01-10-22",
+			"time": "11:06",
+			"foldername": "500M_Bank4_Latency100_AddingforwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641781103019",
+			"date": "01-10-22",
+			"time": "11:18",
+			"foldername": "500M_Bank4_Latency20_AddingforwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641787943874",
+			"date": "01-10-22",
+			"time": "13:12",
+			"foldername": "500M_Bank4_Latency20_UpdateBankCyclesinRead",
+			"description": ""
+		},
+		{
+			"id": "1641787967225",
+			"date": "01-10-22",
+			"time": "13:12",
+			"foldername": "500M_Bank4_Latency100_UpdateBankCyclesinRead",
+			"description": ""
+		},
+		{
+			"id": "1641805279885",
+			"date": "01-10-22",
+			"time": "18:01",
+			"foldername": "500M_Bank1_Latency20_ForwardLatency",
+			"description": "500M_Bank1_Latency20_ForwardLatency"
+		},
+		{
+			"id": "1641805303006",
+			"date": "01-10-22",
+			"time": "18:01",
+			"foldername": "500M_Bank1_Latency60_ForwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641805560948",
+			"date": "01-10-22",
+			"time": "18:06",
+			"foldername": "500M_Bank1_Latency100_ForwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641812733381",
+			"date": "01-10-22",
+			"time": "20:05",
+			"foldername": "500M_Bank1_Latency30_ForwardLatency",
+			"description": "500M_Bank1_Latency30_ForwardLatency"
+		},
+		{
+			"id": "1641812789728",
+			"date": "01-10-22",
+			"time": "20:06",
+			"foldername": "500M_Bank1_Latency40_ForwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641813606466",
+			"date": "01-10-22",
+			"time": "20:20",
+			"foldername": "500M_Bank1_Latency20_ForwardLatency",
+			"description": "500M_Bank1_Latency20_ForwardLatency"
+		},
+		{
+			"id": "1641813690918",
+			"date": "01-10-22",
+			"time": "20:21",
+			"foldername": "500M_Bank1_Latency60_ForwardLatency",
+			"description": ""
 		}
 	]
 }
