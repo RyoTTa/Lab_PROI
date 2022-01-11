@@ -420,13 +420,13 @@ BaseCache::recvTimingReq(PacketPtr pkt)
                 forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
             }
             //For Update BankAvailableCycles in Readpkt, Misspkt..
-            /*
+            
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + forwardLatency;
             }else if(bankAvailableCycles[bankAddr] > curCycle()){
                 bankAvailableCycles[bankAddr] += forwardLatency;
             }
-            */
+            
         }
         //Adding part end
         handleTimingReqMiss(pkt, blk, forward_time, request_time);
@@ -1670,7 +1670,6 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 if(bankAvailableCycles[bankAddr] >= curCycle()){
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
-                /*
                 
                 //For Update BankAvailableCycles in Readpkt, Misspkt..
                 
