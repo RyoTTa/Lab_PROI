@@ -70,8 +70,8 @@ class L2Cache(Cache):
     tag_latency = 20
     data_latency = 20
     response_latency = 20
-    fill_latency = 100
-    write_latency = 100
+    fill_latency = 110
+    write_latency = 110
     mshrs = 20
     tgts_per_mshr = 12
     bank_number = 1
