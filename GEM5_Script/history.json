@@ -818,6 +818,48 @@
 			"time": "20:21",
 			"foldername": "500M_Bank1_Latency60_ForwardLatency",
 			"description": ""
+		},
+		{
+			"id": "1641816594338",
+			"date": "01-10-22",
+			"time": "21:09",
+			"foldername": "500M_Bank1_Latency40_ForwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641817710597",
+			"date": "01-10-22",
+			"time": "21:28",
+			"foldername": "500M_Bank1_Latency80_ForwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641868741300",
+			"date": "01-11-22",
+			"time": "11:39",
+			"foldername": "500M_Bank1_Latency100_ForwardLatency",
+			"description": ""
+		},
+		{
+			"id": "1641874968822",
+			"date": "01-11-22",
+			"time": "13:22",
+			"foldername": "500M_Lat20_Default",
+			"description": ""
+		},
+		{
+			"id": "1641875130039",
+			"date": "01-11-22",
+			"time": "13:25",
+			"foldername": "500M_Lat20_Default",
+			"description": "500M_Lat20_Default"
+		},
+		{
+			"id": "1641875187200",
+			"date": "01-11-22",
+			"time": "13:26",
+			"foldername": "500M_Lat60_Default",
+			"description": ""
 		}
 	]
 }

@@ -776,6 +776,7 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 
                 
                 //Adding part start
+                //For Check BankAvailableCycles in MSHR Response
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
                     uint64_t bankAddr = 0;
@@ -826,6 +827,7 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 // the core.
                 
                 //Adding part start
+                //For Check BankAvailableCycles in MSHR Response
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
                     uint64_t bankAddr = 0;
@@ -882,6 +884,7 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 //Adding part end
 
                 //Adding part start
+                //For Check BankAvailableCycles in MSHR Response
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
                     uint64_t bankAddr = 0;
