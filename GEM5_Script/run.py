@@ -209,7 +209,7 @@ def RunBench(tag) :
             gem5_config_option_temp = gem5_config_option
 
         if bench_option == None : 
-            cmd = GEM5_BUILD_FILE[0] + " " \
+            cmd = 'srun '+GEM5_BUILD_FILE[0] + " " \
             + gem5_build_option + " " \
             + GEM5_CONFIG_FILE[0] + " " \
             + gem5_config_option_temp + " " \
@@ -217,7 +217,7 @@ def RunBench(tag) :
             + " > " +OUTPUT_DIR +"/"+ stdout_file \
             + " 2> " +OUTPUT_DIR + "/" + stderr_file
         else : 
-            cmd = GEM5_BUILD_FILE[0] + " " \
+            cmd = 'srun '+GEM5_BUILD_FILE[0] + " " \
             + gem5_build_option + " " \
             + GEM5_CONFIG_FILE[0] + " " \
             + gem5_config_option_temp + " " \
