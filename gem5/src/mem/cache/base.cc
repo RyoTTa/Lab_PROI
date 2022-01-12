@@ -1632,13 +1632,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 }
                 
                 //For Update BankAvailableCycles in Read Hit..
-                /*
+                
                 if(bankAvailableCycles[bankAddr] <= curCycle()){
                     bankAvailableCycles[bankAddr] = curCycle() + dataLatency;
                 }else if(bankAvailableCycles[bankAddr] > curCycle()){
                     bankAvailableCycles[bankAddr] += dataLatency;
                 }
-                */
+                
                 
             }
             
