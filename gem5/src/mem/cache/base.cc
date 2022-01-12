@@ -419,8 +419,7 @@ BaseCache::recvTimingReq(PacketPtr pkt)
             }else{
                 forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
             }
-            //For Update BankAvailableCycles in Readpkt, Misspkt..
-            
+            //For Update BankAvailableCycles in Read Miss..
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + forwardLatency;
             }else if(bankAvailableCycles[bankAddr] > curCycle()){
@@ -1472,7 +1471,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 uint64_t mask = bankNumber - 1;
                 bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             }
-            //For Update BankAvailableCycles in Fill, Writeback..
+            //For Update BankAvailableCycles in Fill, Writeback.. (Default)
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
                 lat += writeLatency;
@@ -1587,7 +1586,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 uint64_t mask = bankNumber - 1;
                 bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             }
-            //For Update BankAvailableCycles in Fill, Writeback..
+            //For Update BankAvailableCycles in Fill, Writeback.. (Default)
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
                 lat += writeLatency;
@@ -1632,7 +1631,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
                 
-                //For Update BankAvailableCycles in Readpkt, Misspkt..
+                //For Update BankAvailableCycles in Read Hit..
                 /*
                 if(bankAvailableCycles[bankAddr] <= curCycle()){
                     bankAvailableCycles[bankAddr] = curCycle() + dataLatency;
@@ -1838,7 +1837,7 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
             uint64_t mask = bankNumber - 1;
             bankAddr = ((pkt->getAddr() >> 6 ) & mask);
         }
-        //For Update BankAvailableCycles in Fill, Writeback..
+        //For Update BankAvailableCycles in Fill, Writeback.. (Default)
         if(bankAvailableCycles[bankAddr] <= curCycle()){
             bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
         }else if(bankAvailableCycles[bankAddr] > curCycle()){

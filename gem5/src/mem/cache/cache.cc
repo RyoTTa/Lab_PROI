@@ -795,14 +795,20 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         completion_time += clockEdge(responseLatency) +
                         (transfer_offset ? pkt->payloadDelay : 0);
                     }
-                    //std::cout << "bankBLockLat  " <<bankBlockLat << std::endl;
-                    //std::cout << "completion_time  " <<completion_time << std::endl;
-                    //std::cout << "clockEdge(bankBlockLat)  " <<clockEdge(bankBlockLat) << std::endl;
-                    //std::cout << "clockEdge(responseLatency)  " <<clockEdge(responseLatency) << std::endl;
+                    
+                    //For Update BankAvailableCycles in MSHR Response..
+                    
+                    if(bankAvailableCycles[bankAddr] <= curCycle()){
+                        bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
+                    }else if(bankAvailableCycles[bankAddr] > curCycle()){
+                        bankAvailableCycles[bankAddr] += responseLatency;
+                    }
+                    
                 }else{
                     completion_time += clockEdge(responseLatency) +
                     (transfer_offset ? pkt->payloadDelay : 0);
                 }
+                
                 
                 //Adding part end
                 
@@ -846,10 +852,14 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         completion_time += clockEdge(responseLatency) +
                         pkt->payloadDelay;
                     }
-                    //std::cout << "bankBLockLat  " <<bankBlockLat << std::endl;
-                    //std::cout << "completion_time  " <<completion_time << std::endl;
-                    //std::cout << "clockEdge(bankBlockLat)  " <<clockEdge(bankBlockLat) << std::endl;
-                    //std::cout << "clockEdge(responseLatency)  " <<clockEdge(responseLatency) << std::endl;
+                    //For Update BankAvailableCycles in MSHR Response..
+                    
+                    if(bankAvailableCycles[bankAddr] <= curCycle()){
+                        bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
+                    }else if(bankAvailableCycles[bankAddr] > curCycle()){
+                        bankAvailableCycles[bankAddr] += responseLatency;
+                    }
+                    
                 }else{
                     completion_time += clockEdge(responseLatency) +
                         pkt->payloadDelay;
@@ -903,10 +913,14 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         completion_time += clockEdge(responseLatency) +
                         pkt->payloadDelay;
                     }
-                    //std::cout << "bankBLockLat  " <<bankBlockLat << std::endl;
-                    //std::cout << "completion_time  " <<completion_time << std::endl;
-                    //std::cout << "clockEdge(bankBlockLat)  " <<clockEdge(bankBlockLat) << std::endl;
-                    //std::cout << "clockEdge(responseLatency)  " <<clockEdge(responseLatency) << std::endl;
+                    //For Update BankAvailableCycles in MSHR Response..
+                    
+                    if(bankAvailableCycles[bankAddr] <= curCycle()){
+                        bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
+                    }else if(bankAvailableCycles[bankAddr] > curCycle()){
+                        bankAvailableCycles[bankAddr] += responseLatency;
+                    }
+                    
                 }else{
                     completion_time += clockEdge(responseLatency) +
                     pkt->payloadDelay;
