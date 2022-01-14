@@ -1497,6 +1497,62 @@
 			"time": "02:59",
 			"foldername": "Checkpoint_10B_mix",
 			"description": ""
+		},
+		{
+			"id": "1642132311338",
+			"date": "01-13-22",
+			"time": "22:51",
+			"foldername": "500M_Lat20_UpdateInReadHit_newWorkload",
+			"description": "500M_Lat20_UpdateInReadHit_newWorkload"
+		},
+		{
+			"id": "1642132339347",
+			"date": "01-13-22",
+			"time": "22:52",
+			"foldername": "500M_Lat30_UpdateInReadHit_newWorkload",
+			"description": "500M_Lat30_UpdateInReadHit_newWorkload"
+		},
+		{
+			"id": "1642132366937",
+			"date": "01-13-22",
+			"time": "22:52",
+			"foldername": "500M_Lat40_UpdateInReadHit_newWorkload",
+			"description": "500M_Lat40_UpdateInReadHit_newWorkload"
+		},
+		{
+			"id": "1642132449465",
+			"date": "01-13-22",
+			"time": "22:54",
+			"foldername": "500M_Lat50_UpdateInReadHit_newWorkload",
+			"description": "500M_Lat50_UpdateInReadHit_newWorkload"
+		},
+		{
+			"id": "1642132473745",
+			"date": "01-13-22",
+			"time": "22:54",
+			"foldername": "500M_Lat60_UpdateInReadHit_newWorkload",
+			"description": "500M_Lat60_UpdateInReadHit_newWorkload"
+		},
+		{
+			"id": "1642142731578",
+			"date": "01-14-22",
+			"time": "01:45",
+			"foldername": "Checkpoint_static_10B",
+			"description": ""
+		},
+		{
+			"id": "1642144139244",
+			"date": "01-14-22",
+			"time": "02:08",
+			"foldername": "Checkpoint_static_10B",
+			"description": ""
+		},
+		{
+			"id": "1642145225742",
+			"date": "01-14-22",
+			"time": "02:27",
+			"foldername": "Checkpoint_static_10B_2",
+			"description": ""
 		}
 	]
 }
