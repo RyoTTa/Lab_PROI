@@ -1553,6 +1553,27 @@
 			"time": "02:27",
 			"foldername": "Checkpoint_static_10B_2",
 			"description": ""
+		},
+		{
+			"id": "1642264179081",
+			"date": "01-15-22",
+			"time": "11:29",
+			"foldername": "Static_500M_60Lat",
+			"description": ""
+		},
+		{
+			"id": "1642264227466",
+			"date": "01-15-22",
+			"time": "11:30",
+			"foldername": "Static_500M_20Lat",
+			"description": ""
+		},
+		{
+			"id": "1642337735915",
+			"date": "01-16-22",
+			"time": "07:55",
+			"foldername": "MIX_126_Checkpoints",
+			"description": ""
 		}
 	]
 }
