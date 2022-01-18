@@ -236,8 +236,8 @@ def RunBench(tag) :
             os.chdir(BENCH_BUILD_DIR[0] + bench_name.split('/')[-1][0:3])
         else :
             os.chdir(BENCH_BUILD_DIR[0] + bench_name.split('/')[-1])
-        #subprocess.Popen(["/bin/bash", "-c", "-i", cmd])
-        subprocess.Popen('srun '+ cmd,shell=True)
+        #subprocess.Popen("srun -x compasslab4 "+ cmd,shell=True)
+        subprocess.Popen("srun "+ cmd,shell=True)
         #fd = os.open("/dev/tty", os.O_RDWR)
         #os.tcsetpgrp(fd, os.getpgrp())
         os.chdir(wd)
@@ -246,7 +246,7 @@ def RunBench(tag) :
 
 
 RunBench("BENCHMARK")
-
+#time.sleep(100)
 ###############history 추가##################
 
 data= {}
