@@ -112,6 +112,35 @@ class BaseCache : public ClockedObject
     int bankNumber = 0;
 
     Cycles *bankAvailableCycles;
+
+    inline int calcBankAddr(Addr addr){
+        uint64_t bankAddr = 0;
+
+        if (bankNumber == 1)
+            bankAddr = 0;
+        else {
+            uint64_t mask = bankNumber - 1;
+            bankAddr = ((addr >> 6 ) & mask);
+        }
+
+        return bankAddr;
+    }
+    Cycles checkBankCycles(uint64_t bankAddr){
+        Cycles tempCycles = Cycles(0);
+
+        if(bankAvailableCycles[bankAddr] >= curCycle()){
+            tempCycles += bankAvailableCycles[bankAddr] - curCycle();
+        }
+        return tempCycles;
+    }
+    void updateBankCycles(uint64_t bankAddr, Cycles latency){
+
+        if(bankAvailableCycles[bankAddr] <= curCycle()){
+            bankAvailableCycles[bankAddr] = curCycle() + latency;
+        }else if(bankAvailableCycles[bankAddr] > curCycle()){
+            bankAvailableCycles[bankAddr] += latency;
+        }
+    }
     //Adding Part End
     /**
      * Reasons for caches to be blocked.

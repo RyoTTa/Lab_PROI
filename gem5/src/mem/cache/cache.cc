@@ -779,13 +779,20 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 //For Check BankAvailableCycles in MSHR Response
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
-                    uint64_t bankAddr = 0;
+                    uint64_t bankAddr = calcBankAddr(tgt_pkt->getAddr());
+                    /*
                     if (bankNumber == 1)
                         bankAddr = 0;
                     else {
                         uint64_t mask = bankNumber - 1;
                         bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
                     }
+                    */
+                    bankBlockLat += responseLatency;
+                    bankBlockLat += checkBankCycles(bankAddr);
+                    completion_time = clockEdge(bankBlockLat) +
+                    (transfer_offset ? pkt->payloadDelay : 0);
+                    /*
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
                         bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
                         bankBlockLat += responseLatency;
@@ -795,14 +802,17 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         completion_time += clockEdge(responseLatency) +
                         (transfer_offset ? pkt->payloadDelay : 0);
                     }
+                    */
                     
                     //For Update BankAvailableCycles in MSHR Response..
-                    
+                    updateBankCycles(bankAddr, responseLatency);
+                    /*
                     if(bankAvailableCycles[bankAddr] <= curCycle()){
                         bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
                     }else if(bankAvailableCycles[bankAddr] > curCycle()){
                         bankAvailableCycles[bankAddr] += responseLatency;
                     }
+                    */
                     
                 }else{
                     completion_time += clockEdge(responseLatency) +
@@ -836,13 +846,21 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 //For Check BankAvailableCycles in MSHR Response
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
-                    uint64_t bankAddr = 0;
+                    uint64_t bankAddr = calcBankAddr(tgt_pkt->getAddr());
+                    /*
                     if (bankNumber == 1)
                         bankAddr = 0;
                     else {
                         uint64_t mask = bankNumber - 1;
                         bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
                     }
+                    */
+                    bankBlockLat += responseLatency;
+                    bankBlockLat += checkBankCycles(bankAddr);
+                    completion_time = clockEdge(bankBlockLat) +
+                    pkt->payloadDelay;
+                    /*
+                    
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
                         bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
                         bankBlockLat += responseLatency;
@@ -852,13 +870,16 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         completion_time += clockEdge(responseLatency) +
                         pkt->payloadDelay;
                     }
+                    */
                     //For Update BankAvailableCycles in MSHR Response..
-                    
+                    updateBankCycles(bankAddr, responseLatency);
+                    /*
                     if(bankAvailableCycles[bankAddr] <= curCycle()){
                         bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
                     }else if(bankAvailableCycles[bankAddr] > curCycle()){
                         bankAvailableCycles[bankAddr] += responseLatency;
                     }
+                    */
                     
                 }else{
                     completion_time += clockEdge(responseLatency) +
@@ -897,13 +918,21 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                 //For Check BankAvailableCycles in MSHR Response
                 if(params_name == "system.l2"){
                     Cycles bankBlockLat = Cycles(0);
-                    uint64_t bankAddr = 0;
+                    uint64_t bankAddr = calcBankAddr(tgt_pkt->getAddr());
+                    /*
                     if (bankNumber == 1)
                         bankAddr = 0;
                     else {
                         uint64_t mask = bankNumber - 1;
                         bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
                     }
+                    */
+                    bankBlockLat += responseLatency;
+                    bankBlockLat += checkBankCycles(bankAddr);
+                    completion_time = clockEdge(bankBlockLat) +
+                    pkt->payloadDelay;
+                    /*
+                    
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
                         bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
                         bankBlockLat += responseLatency;
@@ -913,13 +942,17 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         completion_time += clockEdge(responseLatency) +
                         pkt->payloadDelay;
                     }
+                    */
                     //For Update BankAvailableCycles in MSHR Response..
                     
+                    updateBankCycles(bankAddr, responseLatency);
+                    /*
                     if(bankAvailableCycles[bankAddr] <= curCycle()){
                         bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
                     }else if(bankAvailableCycles[bankAddr] > curCycle()){
                         bankAvailableCycles[bankAddr] += responseLatency;
                     }
+                    */
                     
                 }else{
                     completion_time += clockEdge(responseLatency) +

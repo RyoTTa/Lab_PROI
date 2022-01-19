@@ -405,13 +405,19 @@ BaseCache::recvTimingReq(PacketPtr pkt)
         //For Check BankAvailableCycles in Read Miss
         if(params_name == "system.l2"){
             Cycles bankBlockLat = Cycles(0);
-            uint64_t bankAddr = 0;
+            uint64_t bankAddr = calcBankAddr(pkt->getAddr());
+            /*
             if (bankNumber == 1)
                 bankAddr = 0;
             else {
                 uint64_t mask = bankNumber - 1;
                 bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             }
+            */
+            bankBlockLat += forwardLatency;
+            bankBlockLat += checkBankCycles(bankAddr);
+            forward_time = clockEdge(bankBlockLat) + pkt->headerDelay;
+            /*
             if(bankAvailableCycles[bankAddr] >= curCycle()){
                 bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
                 bankBlockLat += forwardLatency;
@@ -419,12 +425,16 @@ BaseCache::recvTimingReq(PacketPtr pkt)
             }else{
                 forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
             }
+            */
             //For Update BankAvailableCycles in Read Miss..
+            updateBankCycles(bankAddr, forwardLatency);
+            /*
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + forwardLatency;
             }else if(bankAvailableCycles[bankAddr] > curCycle()){
                 bankAvailableCycles[bankAddr] += forwardLatency;
             }
+            */
             
         }
         //Adding part end
@@ -1463,15 +1473,20 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         */
         
         if(params_name == "system.l2"){
-            uint64_t bankAddr = 0;
+            uint64_t bankAddr = calcBankAddr(pkt->getAddr());
 
+            /*
             if (bankNumber == 1)
                 bankAddr = 0;
             else {
                 uint64_t mask = bankNumber - 1;
                 bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             }
+            */
             //For Update BankAvailableCycles in Fill, Writeback.. (Default)
+            updateBankCycles(bankAddr, writeLatency);
+            lat += bankAvailableCycles[bankAddr] - curCycle();
+            /*
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
                 lat += writeLatency;
@@ -1479,6 +1494,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 bankAvailableCycles[bankAddr] += writeLatency;
                 lat += bankAvailableCycles[bankAddr] - curCycle();
             }
+            */
         }
         
 
@@ -1579,14 +1595,19 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         //Adding Part Start
         if(params_name == "system.l2"){
-            uint64_t bankAddr = 0;
+            uint64_t bankAddr = calcBankAddr(pkt->getAddr());
+            /*
             if (bankNumber == 1)
                 bankAddr = 0;
             else {
                 uint64_t mask = bankNumber - 1;
                 bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             }
+            */
             //For Update BankAvailableCycles in Fill, Writeback.. (Default)
+            updateBankCycles(bankAddr, writeLatency);
+            lat += bankAvailableCycles[bankAddr] - curCycle();
+            /*
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
                 lat += writeLatency;
@@ -1594,6 +1615,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                 bankAvailableCycles[bankAddr] += writeLatency;
                 lat += bankAvailableCycles[bankAddr] - curCycle();
             }
+            */
         }
         //Adding Part End
         /*
@@ -1619,25 +1641,33 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
             //Adding Part Start
             if(params_name == "system.l2"){
-                uint64_t bankAddr = 0;
+                uint64_t bankAddr = calcBankAddr(pkt->getAddr());
+                /*
                 if (bankNumber == 1)
                     bankAddr = 0;
                 else {
                     uint64_t mask = bankNumber - 1;
                     bankAddr = ((pkt->getAddr() >> 6 ) & mask);
                 }
+                */
                 //For Check BankAvailableCycles in Read Hit
+
+                lat += checkBankCycles(bankAddr);
+                /*
                 if(bankAvailableCycles[bankAddr] >= curCycle()){
                     lat += bankAvailableCycles[bankAddr] - curCycle();
                 }
+                */
                 
                 //For Update BankAvailableCycles in Read Hit..
-                
+                updateBankCycles(bankAddr, dataLatency);
+                /*
                 if(bankAvailableCycles[bankAddr] <= curCycle()){
                     bankAvailableCycles[bankAddr] = curCycle() + dataLatency;
                 }else if(bankAvailableCycles[bankAddr] > curCycle()){
                     bankAvailableCycles[bankAddr] += dataLatency;
                 }
+                */
                 
                 
             }
@@ -1830,19 +1860,24 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
 
     
     if(params_name == "system.l2"){
-        uint64_t bankAddr = 0;
+        uint64_t bankAddr = calcBankAddr(pkt->getAddr());
+        /*
         if (bankNumber == 1)
             bankAddr = 0;
         else {
             uint64_t mask = bankNumber - 1;
             bankAddr = ((pkt->getAddr() >> 6 ) & mask);
         }
+        */
         //For Update BankAvailableCycles in Fill, Writeback.. (Default)
+        updateBankCycles(bankAddr, writeLatency);
+        /*
         if(bankAvailableCycles[bankAddr] <= curCycle()){
             bankAvailableCycles[bankAddr] = curCycle() + writeLatency;
         }else if(bankAvailableCycles[bankAddr] > curCycle()){
             bankAvailableCycles[bankAddr] += writeLatency;
         }
+        */
     }
     
     stats.handlefillNumber++;

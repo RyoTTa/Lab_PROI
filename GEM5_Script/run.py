@@ -237,11 +237,11 @@ def RunBench(tag) :
         else :
             os.chdir(BENCH_BUILD_DIR[0] + bench_name.split('/')[-1])
         #subprocess.Popen("srun -x compasslab4 "+ cmd,shell=True)
-        subprocess.Popen("srun "+ cmd,shell=True)
+        subprocess.Popen("srun -J "+ bench_name.split('/')[-1] +" " + cmd,shell=True)
         #fd = os.open("/dev/tty", os.O_RDWR)
         #os.tcsetpgrp(fd, os.getpgrp())
         os.chdir(wd)
-        time.sleep(0.5)
+        time.sleep(1)
 
 
 
