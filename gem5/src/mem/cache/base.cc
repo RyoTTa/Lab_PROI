@@ -414,9 +414,9 @@ BaseCache::recvTimingReq(PacketPtr pkt)
                 bankAddr = ((pkt->getAddr() >> 6 ) & mask);
             }
             */
-            bankBlockLat += forwardLatency;
-            bankBlockLat += checkBankCycles(bankAddr);
-            forward_time = clockEdge(bankBlockLat) + pkt->headerDelay;
+            //bankBlockLat += forwardLatency;
+            //bankBlockLat += checkBankCycles(bankAddr);
+            //forward_time = clockEdge(bankBlockLat) + pkt->headerDelay;
             /*
             if(bankAvailableCycles[bankAddr] >= curCycle()){
                 bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
@@ -428,6 +428,8 @@ BaseCache::recvTimingReq(PacketPtr pkt)
             */
             //For Update BankAvailableCycles in Read Miss..
             updateBankCycles(bankAddr, forwardLatency);
+            bankBlockLat += checkBankCycles(bankAddr);
+            forward_time = clockEdge(bankBlockLat) + pkt->headerDelay;
             /*
             if(bankAvailableCycles[bankAddr] <= curCycle()){
                 bankAvailableCycles[bankAddr] = curCycle() + forwardLatency;

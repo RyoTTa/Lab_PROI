@@ -788,10 +788,9 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
                     }
                     */
-                    bankBlockLat += responseLatency;
-                    bankBlockLat += checkBankCycles(bankAddr);
-                    completion_time = clockEdge(bankBlockLat) +
-                    (transfer_offset ? pkt->payloadDelay : 0);
+                    //bankBlockLat += responseLatency;
+                    //bankBlockLat += checkBankCycles(bankAddr);
+                    //completion_time = clockEdge(bankBlockLat) + (transfer_offset ? pkt->payloadDelay : 0);
                     /*
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
                         bankBlockLat += bankAvailableCycles[bankAddr] - curCycle();
@@ -806,6 +805,9 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                     
                     //For Update BankAvailableCycles in MSHR Response..
                     updateBankCycles(bankAddr, responseLatency);
+                    bankBlockLat += checkBankCycles(bankAddr);
+                    completion_time = clockEdge(bankBlockLat) +
+                    (transfer_offset ? pkt->payloadDelay : 0);
                     /*
                     if(bankAvailableCycles[bankAddr] <= curCycle()){
                         bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
@@ -855,10 +857,9 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
                     }
                     */
-                    bankBlockLat += responseLatency;
-                    bankBlockLat += checkBankCycles(bankAddr);
-                    completion_time = clockEdge(bankBlockLat) +
-                    pkt->payloadDelay;
+                    //bankBlockLat += responseLatency;
+                    //bankBlockLat += checkBankCycles(bankAddr);
+                    //completion_time = clockEdge(bankBlockLat) + pkt->payloadDelay;
                     /*
                     
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
@@ -873,6 +874,9 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                     */
                     //For Update BankAvailableCycles in MSHR Response..
                     updateBankCycles(bankAddr, responseLatency);
+                    bankBlockLat += checkBankCycles(bankAddr);
+                    completion_time = clockEdge(bankBlockLat) +
+                    pkt->payloadDelay;
                     /*
                     if(bankAvailableCycles[bankAddr] <= curCycle()){
                         bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
@@ -927,10 +931,9 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                         bankAddr = ((tgt_pkt->getAddr() >> 6 ) & mask);
                     }
                     */
-                    bankBlockLat += responseLatency;
-                    bankBlockLat += checkBankCycles(bankAddr);
-                    completion_time = clockEdge(bankBlockLat) +
-                    pkt->payloadDelay;
+                    //bankBlockLat += responseLatency;
+                    //bankBlockLat += checkBankCycles(bankAddr);
+                    //completion_time = clockEdge(bankBlockLat) + pkt->payloadDelay;
                     /*
                     
                     if(bankAvailableCycles[bankAddr] >= curCycle()){
@@ -946,6 +949,9 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
                     //For Update BankAvailableCycles in MSHR Response..
                     
                     updateBankCycles(bankAddr, responseLatency);
+                    bankBlockLat += checkBankCycles(bankAddr);
+                    completion_time = clockEdge(bankBlockLat) +
+                    pkt->payloadDelay;
                     /*
                     if(bankAvailableCycles[bankAddr] <= curCycle()){
                         bankAvailableCycles[bankAddr] = curCycle() + responseLatency;
