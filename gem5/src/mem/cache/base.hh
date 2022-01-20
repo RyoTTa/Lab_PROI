@@ -49,6 +49,7 @@
 #include <cassert>
 #include <cstdint>
 #include <string>
+#include <cmath>
 
 #include "base/addr_range.hh"
 #include "base/compiler.hh"
@@ -107,10 +108,6 @@ class BaseCache : public ClockedObject
   public:
 
     //Adding Part Start
-    std::string params_name;
-
-    int bankNumber = 0;
-
     Cycles *bankAvailableCycles;
 
     inline int calcBankAddr(Addr addr){
@@ -120,9 +117,8 @@ class BaseCache : public ClockedObject
             bankAddr = 0;
         else {
             uint64_t mask = bankNumber - 1;
-            bankAddr = ((addr >> 6 ) & mask);
+            bankAddr = ((addr >> int(log2(blkSize)) ) & mask);
         }
-
         return bankAddr;
     }
     Cycles checkBankCycles(uint64_t bankAddr){
@@ -134,7 +130,6 @@ class BaseCache : public ClockedObject
         return tempCycles;
     }
     void updateBankCycles(uint64_t bankAddr, Cycles latency){
-
         if(bankAvailableCycles[bankAddr] <= curCycle()){
             bankAvailableCycles[bankAddr] = curCycle() + latency;
         }else if(bankAvailableCycles[bankAddr] > curCycle()){
@@ -374,6 +369,11 @@ class BaseCache : public ClockedObject
 
     CpuSidePort cpuSidePort;
     MemSidePort memSidePort;
+
+    //Adding Part Start
+    std::string params_name;
+    int bankNumber;
+    //Adding Part End
 
   protected:
 
@@ -1089,12 +1089,13 @@ class BaseCache : public ClockedObject
         const BaseCache &cache;
 
         //Adding Part Start
-        /** Number of Writeback. */
-        statistics::Scalar writebackNumber;
+
         /** Number of Write. */
         statistics::Scalar writeNumber;
         /** Number of Read. */
         statistics::Scalar readNumber;
+        /** Number of Writeback. */
+        statistics::Scalar writebackNumber;
         /** Number of Handlefill. */
         statistics::Scalar handlefillNumber;
         /** Number of Service MSHR. */
