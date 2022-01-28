@@ -63,6 +63,21 @@
 #include "params/WriteAllocator.hh"
 #include "sim/cur_tick.hh"
 
+#include <iostream>
+#include <bitset>
+#include <algorithm>
+#include <string>
+#include <vector>
+
+#include "mem/cache/base.hh"
+#include "mem/cache/cache_blk.hh"
+#include "mem/cache/replacement_policies/base.hh"
+#include "mem/cache/replacement_policies/replaceable_entry.hh"
+#include "mem/cache/tags/base.hh"
+#include "mem/cache/tags/indexing_policies/base.hh"
+#include "mem/packet.hh"
+#include "params/BaseSetAssoc.hh"
+
 namespace gem5
 {
 
@@ -80,10 +95,11 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
     : ClockedObject(p),
       cpuSidePort (p.name + ".cpu_side_port", this, "CpuSidePort"),
       memSidePort(p.name + ".mem_side_port", this, "MemSidePort"),
+      //yongho
       //Adding Part Start
       params_name(p.name),
       bankNumber(p.bank_number),
-      //Adding Part End
+       //Adding Part End
       mshrQueue("MSHRs", p.mshrs, 0, p.demand_mshr_reserve, p.name),
       writeBuffer("write buffer", p.write_buffers, p.mshrs, p.name),
       tags(p.tags),
@@ -99,10 +115,9 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       lookupLatency(p.tag_latency),
       dataLatency(p.data_latency),
       forwardLatency(p.tag_latency),
-      //forwardLatency(p.write_latency),
+      //fillLatency(p.data_latency),
       fillLatency(p.write_latency),
       writeLatency(p.write_latency),
-      //responseLatency(p.write_latency),
       responseLatency(p.response_latency),
       sequentialAccess(p.sequential_access),
       numTarget(p.tgts_per_mshr),
@@ -118,7 +133,6 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       addrRanges(p.addr_ranges.begin(), p.addr_ranges.end()),
       system(p.system),
       stats(*this)
-      
 {
     // the MSHR queue has no reserve entries as we check the MSHR
     // queue on every single allocation, whereas the write queue has
@@ -132,7 +146,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
     tempBlock = new TempCacheBlk(blkSize);
 
     //if l2cache, params_name ="system.l2"
-    //params_name = p.name;
+    params_name = p.name;
 
     tags->tagsInit();
     if (prefetcher)
@@ -145,7 +159,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
         "Compressed cache %s does not have a compression algorithm", name());
     if (compressor)
         compressor->setCache(this);
-    
+
     bankAvailableCycles = new Cycles[bankNumber];
 }
 
@@ -367,7 +381,6 @@ BaseCache::recvTimingReq(PacketPtr pkt)
     Tick forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
 
     Cycles lat;
-    //Cycles forwardLatencyForMiss;
     CacheBlk *blk = nullptr;
     bool satisfied = false;
     {
@@ -404,19 +417,18 @@ BaseCache::recvTimingReq(PacketPtr pkt)
 
         handleTimingReqHit(pkt, blk, request_time);
     } else {
-        //Adding part start
-        
+        //yongho
         if(params_name == "system.l2"){
             Cycles bankBlockLat = Cycles(0);
             uint64_t bankAddr = calcBankAddr(pkt->getAddr());
             //For Update BankAvailableCycles in Read Miss..
-            updateBankCycles(bankAddr, forwardLatency);
+            //updateBankCycles(bankAddr, forwardLatency);
+            bankBlockLat += forwardLatency;
             bankBlockLat += checkBankCycles(bankAddr);
             //For Check BankAvailableCycles in Read Miss
             forward_time = clockEdge(bankBlockLat) + pkt->headerDelay;
-            
         }
-        //Adding part end
+        //end
         handleTimingReqMiss(pkt, blk, forward_time, request_time);
 
         ppMiss->notify(pkt);
@@ -537,11 +549,6 @@ BaseCache::recvTimingResp(PacketPtr pkt)
         // were deferred as we couldn't guarrantee a writable copy
         mshr->promoteWritable();
     }
-
-    //Adding part start
-    //handlefillNumber와 serviceMSHRNumber는 MSHR의 크기 차이만큼 난다.
-    //L2에 대한 Read Miss로 인해 Fill이 일어나고(Update BankAvailableCycles), MSHR을 이용해 상위 레벨 캐시(L1)에 데이터를 전송한다. 이에 필요한 latency가 response latency
-    //Adding part end
 
     serviceMSHRTargets(mshr, pkt, blk);
 
@@ -734,8 +741,9 @@ BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
                 blk->data + (blkSize / sizeof(uint64_t)));
         }
     }
-    
+
     // Actually perform the data update
+    // yongjun : 실제 데이터 wrtie 수행
     if (cpkt) {
         cpkt->writeDataToBlock(blk->data, blkSize);
     }
@@ -755,10 +763,177 @@ tracePacket(std::string output, uint8_t* Ptr, uint8_t Size)
     std::cout << output <<std::endl;
     DDUMPN(Ptr, Size);
 }
-    
+//yongjun : change state
+void
+BaseCache::change_state(int len)
+{
+    //const char *old_data = static_cast<const char *>(old_blk);
+    //const char *new_data = static_cast<const char *>(new_blk);
+    //int i, j, c;
+    //std::cout<< "old blk : ";
+    for(int i = 0; i < 512; i++){
+        //if(i % 8 == 0) std::cout<< " ";
+        //if(i % 128 == 0) std::cout<<"\n";
+        //std::cout<< old_blk[i];
+        //std::cout<< new_blk[i];
+        if(old_blk[i] == '0' && new_blk[i] == '1') stats.zeroToOne++;
+        else if(old_blk[i] == '1' && new_blk[i] == '0') stats.oneToZero++;
+        else if(old_blk[i] == '0' && new_blk[i] == '0') stats.zeroToZero++;
+        else if(old_blk[i] == '1' && new_blk[i] == '1') stats.oneToOne++;
 
+    }
+    //std::cout<< "\n";
+
+    /*
+    std::cout<< "new blk : ";
+    for(int i = 0; i < 512; i++){
+        if(i % 8 == 0) std::cout<< " ";
+        if(i % 128 == 0) std::cout<<"\n";
+        std::cout<< new_blk[i];
+    }
+    std::cout<< "\n";
+    */
+    /*
+    std::string old_s, new_s;
+    for (i = 0; i < len; i += 16) {
+        c = len - i;
+        if (c > 16) c = 16;
+        for (j = 0; j < c; j++) {
+            //std::cout << "old & new : " ;
+            //std::cout << std::bitset<8>(old_data[i + j] & 0xff) << " ";
+            //std::cout << std::bitset<8>(new_data[i + j] & 0xff) << " ";
+            //s = std::bitset<16>(data[i + j] & 0xff);
+            old_s = std::bitset<8>(old_data[i + j] & 0xff).to_string();
+            new_s = std::bitset<8>(new_data[i + j] & 0xff).to_string();
+            for(int k = 0; k < 8; k++){
+                if(old_s[k] == '0' && new_s[k] == '1') stats.zeroToOne++;
+                else if(old_s[k] == '1' && new_s[k] == '0') stats.oneToZero++;
+                else if(old_s[k] == '0' && new_s[k] == '0') stats.zeroToZero++;
+                else if(old_s[k] == '1' && new_s[k] == '1') stats.oneToOne++;
+
+            }
+
+
+        }
+        //std::cout<< "\n";
+
+
+        if (c < 16)
+            break;
+    }*/
+
+}
+//yongjun : print_blk
+void
+BaseCache::print_blk(const void* d, int len, int is_old,int is_mem)
+{
+    const char *data = static_cast<const char *>(d);
+    int i, j, c;
+    int narrow_set = 0;
+    //std::vector<int> flag(4,0);
+    int flag[4];
+    for(int k = 0; k < 4; k++){
+        flag[k] = 0;
+    }
+    std::string s;
+    for (i = 0; i < len; i += 16) {
+        //std::ostringstream line;
+        narrow_set = 0;
+        for(int k = 0; k < 4; k++){
+            flag[k] = 0;
+        }
+        c = len - i;
+        if (c > 16) c = 16;
+
+        for (j = 0; j < c; j++) {
+            // narrow set 4,5,6,7 가 모두 0이면
+
+            //printf("%02x", data[i + j] & 0xff);
+            //std::cout << std::bitset<8>(data[i + j] & 0xff) << " ";
+            //s = std::bitset<16>(data[i + j] & 0xff);
+            s = std::bitset<8>(data[i + j] & 0xff).to_string();
+            //if(is_mem && is_old) {
+            //    if (s != "00000000")
+            //        std::cout << std::bitset<8>(data[i + j] & 0xff) << " ";
+            //}
+            for(int l = 0; l < 8; l++){
+                if(is_old){
+                    old_blk[(i*8) + (j*8) + l] = s[l];
+                }
+                else{
+                    new_blk[(i*8) + (j*8) + l] = s[l];
+                }
+            }
+            if(is_old==0){
+                stats.zeroNum += count(s.begin(), s.end(), '0');
+                stats.oneNum += count(s.begin(), s.end(), '1');
+                if(narrow_set >= 4){ // 4,5,6,7 모두 1 일떄
+                    if(count(s.begin(), s.end(), '0') == 8){
+                        //std::cout<<" 8 ";
+                        flag[narrow_set-4] = 1;
+                    }
+                    else{
+                        flag[narrow_set-4] = 0;
+                    }
+                }
+                if(narrow_set == 7 && flag[0] && flag[1] && flag[2] && flag[3]){
+                    stats.narrowWidth += 1;
+                    //std::cout << " narrow ! ";
+                }
+                else if(narrow_set == 7){
+                    stats.NonNarrowWidth += 1;
+                }
+                if(narrow_set != 7) narrow_set += 1;
+                else narrow_set = 0;
+            }
+        }
+        //if(is_mem) std::cout<< "\n";
+
+
+        if (c < 16)
+            break;
+    }
+}
 void
 BaseCache::updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt, bool has_old_data)
+{
+    //yongjun : old, new blk data 저장
+    DataUpdate data_update(regenerateBlkAddr(blk), blk->isSecure());
+    if (ppDataUpdate->hasListeners()) {
+        if (has_old_data) {
+            data_update.oldData = std::vector<uint64_t>(blk->data, blk->data + (blkSize / sizeof(uint64_t)));
+        }
+    }
+
+    //std::cout << data_update.oldData << std::endl;
+    //std::cout << "OldData_mem" << std::endl;
+    print_blk(blk->data, blkSize, 1, 0);
+    //tracePacket("OldData", blk->data, blkSize);
+    //2176340000: global: 00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+    // Actually perform the data update
+    // yongjun : 실제 데이터 wrtie 수행
+    if (cpkt) {
+        cpkt->writeDataToBlock(blk->data, blkSize);
+    }
+
+    if (ppDataUpdate->hasListeners()) {
+        if (cpkt) {
+            data_update.newData = std::vector<uint64_t>(blk->data, blk->data + (blkSize / sizeof(uint64_t)));
+        }
+        ppDataUpdate->notify(data_update);
+    }
+    //std::cout << "NewData" << std::endl;
+    print_blk(blk->data, blkSize, 0, 0);
+    change_state(blkSize);
+    //tracePacket("NewData", blk->data, blkSize);
+
+    //std::cout << data_update.newData << std::endl;
+}
+
+// for mem to cache
+void
+BaseCache::updateBlockDataForL2_mem(CacheBlk *blk, const PacketPtr cpkt, bool has_old_data)
 {
     DataUpdate data_update(regenerateBlkAddr(blk), blk->isSecure());
     if (ppDataUpdate->hasListeners()) {
@@ -767,7 +942,11 @@ BaseCache::updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt, bool has_ol
         }
     }
 
-    //tracePacket("OldData", blk->data, blkSize);
+    //std::cout << data_update.oldData << std::endl;
+    //tracePacket("OldData_mem", blk->data, blkSize);
+    //std::cout << "OldData_mem" << std::endl;
+    print_blk(blk->data, blkSize, 1, 1);
+    //std::cout << "OldData_mem end" << std::endl;
 
     // Actually perform the data update
     if (cpkt) {
@@ -780,8 +959,16 @@ BaseCache::updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt, bool has_ol
         }
         ppDataUpdate->notify(data_update);
     }
-    //tracePacket("NewData", blk->data, blkSize);
+    //tracePacket("NewData_mem", blk->data, blkSize);
+    //std::cout << "NewData_mem" << std::endl;
+    print_blk(blk->data, blkSize, 0, 1);
+
+    change_state(blkSize);
+
 }
+
+
+
 
 
 void
@@ -927,12 +1114,14 @@ BaseCache::getNextQueueEntry()
 
     return nullptr;
 }
-
+//yongjun : evcit_blks list processing
 bool
 BaseCache::handleEvictions(std::vector<CacheBlk*> &evict_blks,
     PacketList &writebacks)
 {
     bool replacement = false;
+    int is_l2 = 0;
+    if(params_name == "system.l2") is_l2 = 1;
     for (const auto& blk : evict_blks) {
         if (blk->isValid()) {
             replacement = true;
@@ -1202,19 +1391,17 @@ BaseCache::calculateAccessLatency(const CacheBlk* blk, const uint32_t delay,
         // access latency on top of when the block is ready to be accessed.
         const Tick tick = curTick() + delay;
         const Tick when_ready = blk->getWhenReady();
-        //Adding Part Start
-        /*
-        if (when_ready > tick &&
+        /*if (when_ready > tick &&
             ticksToCycles(when_ready - tick) > lat) {
             lat += ticksToCycles(when_ready - tick);
-        }
-        */
+        }*/
+        //yongho
         if (when_ready > tick &&
             ticksToCycles(when_ready - tick) > lat &&
             (params_name != "system.l2")) {
             lat += ticksToCycles(when_ready - tick);
         }
-        //Adding Part End
+        //end
     } else {
         // In case of a miss, we neglect the data access in a parallel
         // configuration (i.e., the data access will be stopped as soon as
@@ -1224,7 +1411,7 @@ BaseCache::calculateAccessLatency(const CacheBlk* blk, const uint32_t delay,
 
     return lat;
 }
-
+//yongjun : access
 bool
 BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                   PacketList &writebacks)
@@ -1232,16 +1419,26 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // sanity check
     assert(pkt->isRequest());
 
+
     chatty_assert(!(isReadOnly && pkt->isWrite()),
                   "Should never see a write in a read-only cache %s\n",
                   name());
 
     // Access block in the tags
     Cycles tag_latency(0);
+    // yongjun : if miss blk is NULL
     blk = tags->accessBlock(pkt, tag_latency);
 
     DPRINTF(Cache, "%s for %s %s\n", __func__, pkt->print(),
             blk ? "hit " + blk->print() : "miss");
+    //yongjun : pkt addr -> check hit or miss
+    //std::cout << " cache:base.cc addr = " << pkt->getAddr() << '\n';
+    int is_hit = 0;
+    if (params_name == "system.l2") {
+        if (blk) is_hit = 1;
+        tags->updataLocalCounterToTags(pkt->getAddr(), is_hit);
+        //tags->updataLocalCounterToTags(pkt->getAddr(), 1);
+    }
 
     if (pkt->req->isCacheMaintenance()) {
         // A cache maintenance operation is always forwarded to the
@@ -1254,23 +1451,6 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // Calculate access latency on top of when the packet arrives. This
         // takes into account the bus delay.
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
-
-        //Adding Part Start
-        /*
-        if(params_name == "system.l2"){
-            uint64_t bankAddr = 0;
-            if (bankNumber == 1)
-                bankAddr = 0;
-            else {
-                uint64_t mask = bankNumber - 1;
-                bankAddr = ((pkt->getAddr() >> 6 ) & mask);
-            }
-            if(bankAvailableCycles[bankAddr] >= curCycle()){
-                lat += bankAvailableCycles[bankAddr] - curCycle();
-            }
-        }
-        */
-        //Adding Part End
 
         return false;
     }
@@ -1304,22 +1484,6 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
                 // A clean evict does not need to access the data array
                 lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
-                //Adding Part Start
-                /*
-                if(params_name == "system.l2"){
-                    uint64_t bankAddr = 0;
-                    if (bankNumber == 1)
-                        bankAddr = 0;
-                    else {
-                        uint64_t mask = bankNumber - 1;
-                        bankAddr = ((pkt->getAddr() >> 6 ) & mask);
-                    }
-                    if(bankAvailableCycles[bankAddr] >= curCycle()){
-                        lat += bankAvailableCycles[bankAddr] - curCycle();
-                    }
-                }
-                */
-                //Adding Part End
 
                 return true;
             } else {
@@ -1334,23 +1498,18 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     }
 
     // The critical latency part of a write depends only on the tag access
+    //yongjun : iswrite
     if (pkt->isWrite()) {
-        
-        if (params_name == "system.l2"){
-            lat = calculateTagOnlyLatency(pkt->headerDelay, Cycles(0)); 
-            stats.writeNumber++;
-        }else{
-            lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);    
-        }
+        lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);    
     }
-
     // Writeback handling is special case.  We can write the block into
     // the cache without having a writeable copy (or any copy at all).
     if (pkt->isWriteback()) {
         //Adding Parts Start
-        if (params_name == "system.l2"){
-            stats.writebackNumber++;
-        }
+        //if (params_name == "system.l2"){
+        //    tempForWrite++;
+            //std::cout << "L2, Write : " << tempForWrite << std::endl;
+        //}
         //Adding Parts End
         assert(blkSize == pkt->getSize());
 
@@ -1369,12 +1528,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             // MSHR. As of now assume a mshr queue search takes as long as
             // a tag lookup for simplicity.
             return true;
-            //yongho, L1으로부터 WritebackClean에 대한 Writeback이 들어오면 무시.
+            //yongho, L1으로부터 WritebackClean에 대한 Writeback이 들어오면 무시
         }
-
+        //yongjun : blk(o) and vaild
         const bool has_old_data = blk && blk->isValid();
         if (!blk) {
             // need to do a replacement
+            //yongjun : alloc block -> success or fail
             blk = allocateBlock(pkt, writebacks);
             if (!blk) {
                 // no replaceable block available: give up, fwd to next level.
@@ -1399,8 +1559,11 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // and leave it as is for a clean writeback
         if (pkt->cmd == MemCmd::WritebackDirty) {
             // TODO: the coherent cache can assert that the dirty bit is set
+            // yongjun : WritebackDirty-> blk DirtyBits로 set
             blk->setCoherenceBits(CacheBlk::DirtyBit);
-            // yongho, WritebackDirty 상태라면 blk의 상태를 DirtyBits로 설정
+            //yongjun : IF dirty writeback, Deadblock prediction
+
+
         }
         // if the packet does not have sharers, it is passing
         // writable, and we got the writeback in Modified or Exclusive
@@ -1412,15 +1575,85 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         assert(!pkt->needsResponse());
 
         // Adding Parts Start
-        
         if (params_name == "system.l2"){
+
+            // yongjun : PROI
+            // Write hit
+            //baseline
+            if((pkt->isWriteback()) && (is_hit) && (params_name == "system.l2")){
+                std::vector<CacheBlk*> dead_evict_blks;
+                const Addr addr_test = pkt->getAddr();
+                tags->writeHitL2_PROI(addr_test, dead_evict_blks, 0);
+
+                if(dead_evict_blks.size() == 1) {
+                    if((dead_evict_blks[0]==blk)==true){
+                        dead_evict_blks[0] = NULL;
+                        tags->writeHitL2_PROI(addr_test, dead_evict_blks, 1);
+                    }
+                    if((dead_evict_blks[0]==blk)==false) {
+                        stats.DeadblockCount++;
+                        handleEvictions(dead_evict_blks, writebacks);
+                        int narrow_set = 0;
+                        int flag[4];
+                        for(int k = 0; k < 4; k++){
+                            flag[k] = 0;
+                        }
+                        uint8_t tmp = 0;
+                        //uint8_t tmp = 255;
+                        uint8_t *data = dead_evict_blks[0]->data;
+                        for (int i = 0; i < 64; i++) {
+                            std::string s;
+                            s = std::bitset<8>(data[i] & 0xff).to_string();
+                            for (int j = 0; j < 8; j++) {
+                                if (s[j] == '0') stats.zeroToZero_preset++;
+                                else if (s[j] == '1') stats.zeroToOne_preset++;
+                            }
+                            data[i] = tmp;
+                            if(narrow_set >= 4){
+                                //for (int j = 0; j < 8; j++) {
+                                //    if (s[j] == '0') stats.zeroToZero_preset++;
+                                //    else if (s[j] == '1') stats.zeroToOne_preset++;
+                                //}
+                                //data[i] = tmp;
+                                if(count(s.begin(), s.end(), '0') == 8){
+                                    flag[narrow_set-4] = 1;
+                                }
+                                else{
+                                    flag[narrow_set-4] = 0;
+                                }
+                            }
+                            if(narrow_set == 7 && flag[0] && flag[1] && flag[2] && flag[3]){
+                                stats.narrowWidth_preset += 1;
+                            }
+                            else if(narrow_set == 7){
+                                stats.NonNarrowWidth_preset += 1;
+                            }
+                            if(narrow_set != 7) narrow_set += 1;
+                            else {
+                                narrow_set = 0;
+                                for(int k = 0; k < 4; k++){
+                                    flag[k] = 0;
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+            //end
             updateBlockDataForL2(blk, pkt, has_old_data);
+
         }else{
             updateBlockData(blk, pkt, has_old_data);
         }
         
-        
         //updateBlockData(blk, pkt, has_old_data);
+        // yongho, Datablk Update 코드?
+        
+        //if (params_name == "system.l2"){
+        //    std::cout << "Has_old_data? : " << has_old_data << std::endl;
+        //}
+        // Adding Parts End
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
 
@@ -1429,17 +1662,16 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // soon as the fill is done
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
-        //Adding Part Start
-        
+
+        //yongho
         if(params_name == "system.l2"){
             uint64_t bankAddr = calcBankAddr(pkt->getAddr());
             //For Update BankAvailableCycles in Fill, Writeback.. (Default)
+            //dataLatency = 20
+            //writeLatency = 50
             updateBankCycles(bankAddr, writeLatency);
         }
-        
-
-        //Adding Part End
-
+        //end
         return true;
     } else if (pkt->cmd == MemCmd::CleanEvict) {
         // A CleanEvict does not need to access the data array
@@ -1515,15 +1747,16 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // soon as the fill is done
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
-
-        //Adding Part Start
+        //yongho
         if(params_name == "system.l2"){
-        
             uint64_t bankAddr = calcBankAddr(pkt->getAddr());
             //For Update BankAvailableCycles in Fill, Writeback.. (Default)
+            //dataLatency = 20
+            //writeLatency = 50
             updateBankCycles(bankAddr, writeLatency);
         }
-        //Adding Part End
+        //end
+
         // If this a write-through packet it will be sent to cache below
         return !pkt->writeThrough();
     } else if (blk && (pkt->needsWritable() ?
@@ -1535,30 +1768,19 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
-            /*
-            if(params_name == "system.l2" && (curCycle() < blk->getWhenReadyCycles())){
-                lat += blk->getWhenReadyCycles() - curCycle();
-            }
-            */
-
-            //Adding Part Start
+            //yongho
             if(params_name == "system.l2"){
                 uint64_t bankAddr = calcBankAddr(pkt->getAddr());
                 //For Check BankAvailableCycles in Read Hit
                 lat += checkBankCycles(bankAddr);
                 //For Update BankAvailableCycles in Read Hit..
-                updateBankCycles(bankAddr, dataLatency);
-                
+                //updateBankCycles(bankAddr, dataLatency);
             }
-            
-            
-            if(params_name == "system.l2"){
-                stats.readNumber++;
-            }
-            //Adding Part End
+            //end
 
             // When a block is compressed, it must first be decompressed
             // before being read. This adds to the access latency.
+
             if (compressor) {
                 lat += compressor->getDecompressionLatency(blk);
             }
@@ -1610,17 +1832,43 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     const bool has_old_data = blk && blk->isValid();
     const std::string old_state = blk ? blk->print() : "";
 
+    //yongjun
+    int is_invalid = 0;
+    int is_preset = 0;
+    int is_fastwrite = 0;
+
     // When handling a fill, we should have no writes to this line.
     assert(addr == pkt->getBlockAddr(blkSize));
     assert(!writeBuffer.findMatch(addr, is_secure));
-
+    // yongjun : block이 없으면 새로 block 할당해줌
     if (!blk) {
         // better have read new data...
         assert(pkt->hasData() || pkt->cmd == MemCmd::InvalidateResp);
 
         // need to do a replacement if allocating, otherwise we stick
         // with the temporary storage
+        // yongjun : allocateBlock 함수 호출, blk = old_data
         blk = allocate ? allocateBlock(pkt, writebacks) : nullptr;
+
+        // yongjun : victim was invalid? check
+        if(params_name == "system.l2") {
+            //is_invalid = tags->is_invalid_victm;
+            is_invalid = tags->getIsInvalid();
+            uint8_t* data = blk->data;
+            int flag_one = 0;
+            for(int i = 0; i < 64; i++){
+                std::string s;
+                s = std::bitset<8>(data[i] & 0xff).to_string();
+                for(int j = 0; j < 8; j++){
+                    if(s[j] =='1') flag_one = 1;
+                }
+            }
+            if(flag_one == 0) is_preset = 1;
+            else if(flag_one == 1) is_preset =0;
+
+            is_fastwrite = is_invalid & is_preset;
+
+        }
 
         if (!blk) {
             // No replaceable block or a mostly exclusive
@@ -1686,21 +1934,38 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
         // sanity checks
         assert(pkt->hasData());
         assert(pkt->getSize() == blkSize);
-
-        updateBlockData(blk, pkt, has_old_data);
+        // yongjun : memory updata : pkt 에 있는 data 로 업데이트 한다.
+        if (params_name == "system.l2"){
+            updateBlockDataForL2_mem(blk, pkt, has_old_data);
+        }else{
+            updateBlockData(blk, pkt, has_old_data);
+        }
+        //updateBlockData(blk, pkt, has_old_data);
     }
     // The block will be ready when the payload arrives and the fill is done
+    //yongujun : cache fill하는 부분, latency 추가
     blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
                       pkt->payloadDelay);
 
-    
+    //yongho
+    //Adding part start
     if(params_name == "system.l2"){
         uint64_t bankAddr = calcBankAddr(pkt->getAddr());
         //For Update BankAvailableCycles in Fill, Writeback.. (Default)
-        updateBankCycles(bankAddr, writeLatency);
+        //yongjun : PROI fast write part
+        //dataLatency = 20
+        //writeLatency = 50
+        //baseline
+        if(is_fastwrite){
+            updateBankCycles(bankAddr, dataLatency);
+            stats.fastwrite++;
+        }
+        else{
+            updateBankCycles(bankAddr, writeLatency);
+            stats.slowwrite++;
+        }
     }
-    
-    stats.handlefillNumber++;
+    //Adding part end
 
     return blk;
 }
@@ -1734,6 +1999,8 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
 
     // Find replacement victim
     std::vector<CacheBlk*> evict_blks;
+    // yongjun : victim 을 return 해줌. to tags/base_set_assoc.hh:176
+
     CacheBlk *victim = tags->findVictim(addr, is_secure, blk_size_bits,
                                         evict_blks);
 
@@ -1742,6 +2009,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         return nullptr;
 
     // Print victim block's information
+    // std::cout << "Replace ment victim info " <<victim->print() << "\n";
     DPRINTF(CacheRepl, "Replacement victim: %s\n", victim->print());
 
     // Try to evict blocks; if it fails, give up on allocation
@@ -1749,7 +2017,61 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         return nullptr;
     }
 
+    //yongjun : preset
+    //baseline
+    if(params_name == "system.l2") {
+        int narrow_set = 0;
+        int flag[4];
+        for(int k = 0; k < 4; k++){
+            flag[k] = 0;
+        }
+        if (evict_blks.size() == 2) {
+            //std::cout<<"dead block"<<'\n';
+            stats.DeadblockCount++;
+            uint8_t tmp = 0;
+            //uint8_t tmp = 255;
+            uint8_t *data = evict_blks[1]->data;
+            for (int i = 0; i < 64; i++) {
+                std::string s;
+                s = std::bitset<8>(data[i] & 0xff).to_string();
+                for (int j = 0; j < 8; j++) {
+                    if (s[j] == '0') stats.zeroToZero_preset++;
+                    else if (s[j] == '1') stats.zeroToOne_preset++;
+                }
+                data[i] = tmp;
+                if(narrow_set >= 4){
+                    if(count(s.begin(), s.end(), '0') == 8){
+                        flag[narrow_set-4] = 1;
+                    }
+                    else{
+                        flag[narrow_set-4] = 0;
+                    }
+                }
+                if(narrow_set == 7 && flag[0] && flag[1] && flag[2] && flag[3]){
+                    stats.narrowWidth_preset += 1;
+                }
+                else if(narrow_set == 7){
+                    stats.NonNarrowWidth_preset += 1;
+                }
+                if(narrow_set != 7) narrow_set += 1;
+                else {
+                    narrow_set = 0;
+                    for(int k = 0; k < 4; k++){
+                        flag[k] = 0;
+                    }
+                }
+
+            }
+        }
+    }
+
+
+
+    //end
+
+
     // Insert new block at victimized entry
+    //yongjun : invalid to valid
     tags->insertBlock(pkt, victim);
 
     // If using a compressor, set compression data. This must be done after
@@ -1761,7 +2083,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
 
     return victim;
 }
-
+//yongjun : 1109 line invalidateBlock
 void
 BaseCache::invalidateBlock(CacheBlk *blk)
 {
@@ -1769,7 +2091,7 @@ BaseCache::invalidateBlock(CacheBlk *blk)
     if (blk->wasPrefetched()) {
         prefetcher->prefetchUnused();
     }
-
+    //yongjun : invalidate
     // Notify that the data contents for this address are no longer present
     updateBlockData(blk, nullptr, blk->isValid());
 
@@ -2290,13 +2612,42 @@ BaseCache::CacheCmdStats::regStatsFromParent()
 BaseCache::CacheStats::CacheStats(BaseCache &c)
     : statistics::Group(&c), cache(c),
 
-    ADD_STAT(writeNumber, statistics::units::Count::get(), "number of write"),
-    ADD_STAT(readNumber, statistics::units::Count::get(), "number of read"),
-    ADD_STAT(writebackNumber, statistics::units::Count::get(), "number of writeback"),
-    ADD_STAT(handlefillNumber, statistics::units::Count::get(), "number of handlefill"),
-    ADD_STAT(serviceMSHRNumber, statistics::units::Count::get(), "number of ServiceMSHR"),
+    //yongjun : statics 출력
+    ADD_STAT(zeroNum, statistics::units::Count::get(),
+             "number of zero value in Cache block"),
+    ADD_STAT(oneNum, statistics::units::Count::get(),
+             "number of one value in Cache block"),
+    ADD_STAT(narrowWidth, statistics::units::Count::get(),
+             "number of narrow width value in Cache block"),
+    ADD_STAT(NonNarrowWidth, statistics::units::Count::get(),
+             "number of Non narrow width value in Cache block"),
+    ADD_STAT(zeroToOne, statistics::units::Count::get(),
+             "number of zero to one value in Cache block"),
+    ADD_STAT(oneToZero, statistics::units::Count::get(),
+             "number of one to zero value in Cache block"),
+    ADD_STAT(oneToOne, statistics::units::Count::get(),
+             "number of one to one value in Cache block"),
+    ADD_STAT(zeroToZero, statistics::units::Count::get(),
+             "number of zero to zero in Cache block"),
+
+    ADD_STAT(zeroToZero_preset, statistics::units::Count::get(),
+            "number of zero to zero (preset) in Cache block"),
+    ADD_STAT(zeroToOne_preset, statistics::units::Count::get(),
+            "number of zero to one (preset) in Cache block"),
+    ADD_STAT(narrowWidth_preset, statistics::units::Count::get(),
+           "number of narrow width value in Cache block"),
+    ADD_STAT(NonNarrowWidth_preset, statistics::units::Count::get(),
+           "number of Non narrow width value in Cache block"),
+    ADD_STAT(DeadblockCount, statistics::units::Count::get(),
+           "number of Deadblock in Cache"),
+
+    ADD_STAT(fastwrite, statistics::units::Count::get(),
+           "number of fastwrite"),
+    ADD_STAT(slowwrite, statistics::units::Count::get(),
+           "number of slowwrite"),
 
 
+    // end
 
     ADD_STAT(demandHits, statistics::units::Count::get(),
              "number of demand (read+write) hits"),

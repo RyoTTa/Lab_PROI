@@ -110,6 +110,7 @@ class Dueling : public Base
                                                                      override;
     ReplaceableEntry* getVictim(const ReplacementCandidates& candidates) const
                                                                      override;
+    ReplaceableEntry* getVictim(const ReplacementCandidates& candidates, int flag) const override;
     std::shared_ptr<ReplacementData> instantiateEntry() override;
 };
 

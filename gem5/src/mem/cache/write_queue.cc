@@ -56,7 +56,7 @@ WriteQueue::WriteQueue(const std::string &_label,
     : Queue<WriteQueueEntry>(_label, num_entries, reserve,
             name + ".write_queue")
 {}
-
+//yongjun : write buffer allocate
 WriteQueueEntry *
 WriteQueue::allocate(Addr blk_addr, unsigned blk_size, PacketPtr pkt,
                     Tick when_ready, Counter order)

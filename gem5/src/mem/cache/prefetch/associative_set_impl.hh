@@ -77,7 +77,6 @@ AssociativeSet<Entry>::accessEntry(Entry *entry)
 {
     replacementPolicy->touch(entry->replacementData);
 }
-
 template<class Entry>
 Entry*
 AssociativeSet<Entry>::findVictim(Addr addr)
@@ -89,6 +88,7 @@ AssociativeSet<Entry>::findVictim(Addr addr)
                             selected_entries));
     // There is only one eviction for this replacement
     invalidate(victim);
+    printf("###############invalidate victim !! ");
     return victim;
 }
 

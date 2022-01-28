@@ -50,6 +50,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include<string.h>
 
 #include "base/logging.hh"
 #include "base/types.hh"
@@ -88,6 +89,12 @@ class BaseSetAssoc : public BaseTags
     replacement_policy::Base *replacementPolicy;
 
   public:
+    //yongjun : fast write
+    int is_invalid_victim;
+    int getIsInvalid(){
+        return is_invalid_victim;
+    }
+    //end
     /** Convenience typedef. */
      typedef BaseSetAssocParams Params;
 
@@ -95,7 +102,8 @@ class BaseSetAssoc : public BaseTags
      * Construct and initialize this tag store.
      */
     BaseSetAssoc(const Params &p);
-
+    //yongjun : base_set_assoc params name
+    std::string params_name;
     /**
      * Destructor
      */
@@ -154,6 +162,68 @@ class BaseSetAssoc : public BaseTags
 
         return blk;
     }
+    // yongjun : update local counter
+    void updataLocalCounterToTags(Addr addr, int is_hit){
+        indexingPolicy->updateLocalCounter(addr, is_hit);
+    }
+    // yongjun : writeback PROI, Write hit
+    void writeHitL2_PROI(Addr addr, std::vector<CacheBlk*>& evict_blks, int flag)
+    {
+        int local_cnt_value = 0;
+        int thres = 16;
+        const std::vector<ReplaceableEntry*> entries =
+                indexingPolicy->getPossibleEntries(addr);
+        if((params_name == "system.l2.tags") && (flag==0)) {
+            int is_invalid = 0;
+            for (const auto &candidate: entries) {
+                CacheBlk* valid_test = static_cast<CacheBlk *>(candidate);
+                bool valid_bit = valid_test->isValid();
+                if(!valid_bit){ // if has invalid entry
+                    is_invalid = 1;
+                }
+            }
+            //int setIdx = indexingPolicy->getSetIdx(addr);
+            local_cnt_value = indexingPolicy->getLocalCounter(addr);
+            if((local_cnt_value <= thres) && (!is_invalid)) {
+                CacheBlk *victim_dead = static_cast<CacheBlk *>(replacementPolicy->getVictim(
+                        entries));
+                // IF NULL DON'T INSERT
+                if (victim_dead != NULL) {
+                    stats.deadblock++;
+                    evict_blks.push_back(victim_dead);
+                }
+            }
+            else if((local_cnt_value > thres) && (!is_invalid)){
+                stats.Nondeadblock++;
+            }
+        }
+        else if((params_name == "system.l2.tags") && (flag==1)) {
+            int is_invalid = 0;
+            for (const auto &candidate: entries) {
+                CacheBlk* valid_test = static_cast<CacheBlk *>(candidate);
+                bool valid_bit = valid_test->isValid();
+                if(!valid_bit){ // if has invalid entry
+                    is_invalid = 1;
+                }
+            }
+            //int setIdx = indexingPolicy->getSetIdx(addr);
+            local_cnt_value = indexingPolicy->getLocalCounter(addr);
+            if((local_cnt_value <= thres) && (!is_invalid)) {
+                CacheBlk *victim_dead = static_cast<CacheBlk *>(replacementPolicy->getVictim(
+                        entries, 1));
+                // IF NULL DON'T INSERT
+                if (victim_dead != NULL) {
+                    stats.deadblock++;
+                    evict_blks.push_back(victim_dead);
+                }
+            }
+            else if((local_cnt_value > thres) && (!is_invalid)){
+                stats.Nondeadblock++;
+            }
+        }
+    }
+    //end
+
 
     /**
      * Find replacement victim based on address. The list of evicted blocks
@@ -165,21 +235,92 @@ class BaseSetAssoc : public BaseTags
      * @param evict_blks Cache blocks to be evicted.
      * @return Cache block to be replaced.
      */
+     // yongjun : base.cc 1811 line findVictim
+     //yongjun : findvictim, invalidate
     CacheBlk* findVictim(Addr addr, const bool is_secure,
                          const std::size_t size,
                          std::vector<CacheBlk*>& evict_blks) override
     {
         // Get possible entries to be victimized
+        // yongjun : set blocks
+        int local_cnt_value = 0;
+        int thres = 16;
         const std::vector<ReplaceableEntry*> entries =
             indexingPolicy->getPossibleEntries(addr);
+
+        //std::cout << "base_set_accos addr = " << addr << '\n';
 
         // Choose replacement victim from replacement candidates
         CacheBlk* victim = static_cast<CacheBlk*>(replacementPolicy->getVictim(
                                 entries));
-
+        if((params_name == "system.l2.tags")) {
+            if (victim->isValid() == 0) {
+                is_invalid_victim = 1;
+            } else if (victim->isValid() == 1) {
+                is_invalid_victim = 0;
+            }
+        }
         // There is only one eviction for this replacement
         evict_blks.push_back(victim);
+        //eivct_blks + data to All 0
+        //std::cout << params_name << '\n';
+        //yongjun : change getVictim to dead block
+        //std::tuple<void*, void*> tmp = (replacementPolicy->getVictim_deadblock(entries));
+        //CacheBlk* victim = static_cast<CacheBlk*>(std::get<0>(tmp));
+        //CacheBlk* victim_deadblock = static_cast<CacheBlk*>(std::get<1>(tmp));
+        //yongjun : 2개 evict 필요, push.back ?
 
+        //uint8_t tmp = 0;
+        //baseline
+        //begin
+        if((params_name == "system.l2.tags")){
+            int is_invalid = 0;
+            for (const auto &candidate: entries) {
+                CacheBlk* valid_test = static_cast<CacheBlk *>(candidate);
+                bool valid_bit = valid_test->isValid();
+                if(!valid_bit){ // if has invalid entry
+                    if(valid_test != victim) {
+                        is_invalid = 1;
+                    }
+                }
+            }
+            int setIdx = indexingPolicy->getSetIdx(addr);
+            local_cnt_value = indexingPolicy->getLocalCounter(addr);
+            if((local_cnt_value <= thres) && (!is_invalid)) {
+                CacheBlk *victim_dead = static_cast<CacheBlk *>(replacementPolicy->getVictim(
+                        entries, 1));
+                // IF NULL DON'T INSERT
+                //blk->isValid()
+
+                if (victim_dead != NULL) {
+
+                    stats.deadblock++;
+                    evict_blks.push_back(victim_dead);
+                    //uint8_t* data = victim_dead->data;
+                    //std::cout << "data = " <<*data << '\n';
+                    //for(int i =0; i < 64; i++){
+                    //data[i] = tmp;
+                    //}
+                    //std::memset(victim_dead->data, 0, 64);
+                    //std::memcpy(victim_dead->data, all_zero_p, 64);
+                    //std::memcpy(p, getConstPtr<uint8_t>(), getSize());
+                    //for(int i = 0 ; i< 64;i++){
+                    //    victim_dead->data[i] = 0;
+                    //}
+                    //std::cout<<"no preset !!"<< '\n';
+                }
+            }
+            else if((local_cnt_value > thres) && (!is_invalid)){
+                stats.Nondeadblock++;
+            }
+        }
+
+
+
+
+        //end
+
+        //return victim;
         return victim;
     }
 

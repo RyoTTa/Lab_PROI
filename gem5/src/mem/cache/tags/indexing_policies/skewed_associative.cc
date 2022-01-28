@@ -219,5 +219,19 @@ SkewedAssociative::getPossibleEntries(const Addr addr) const
 
     return entries;
 }
-
+//yongjun
+int
+SkewedAssociative::getLocalCounter(const Addr addr) const
+{
+    return 16;
+}
+void
+SkewedAssociative::updateLocalCounter(Addr addr, int is_hit){
+    is_hit = is_hit;
+}
+int
+SkewedAssociative::getSetIdx(const Addr addr) const
+{
+    return 0;
+}
 } // namespace gem5

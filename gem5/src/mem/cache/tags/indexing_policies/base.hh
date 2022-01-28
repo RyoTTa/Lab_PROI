@@ -90,7 +90,8 @@ class BaseIndexingPolicy : public SimObject
      * The cache sets.
      */
     std::vector<std::vector<ReplaceableEntry*>> sets;
-
+    //yongjun : local counter
+    int local_counter[8192] = {0,};
     /**
      * The amount to shift the address to get the tag.
      */
@@ -148,7 +149,11 @@ class BaseIndexingPolicy : public SimObject
      */
     virtual std::vector<ReplaceableEntry*> getPossibleEntries(const Addr addr)
                                                                     const = 0;
-
+    //yongjun
+    virtual int getLocalCounter(const Addr addr) const = 0;
+    virtual void updateLocalCounter(const Addr addr, int is_hit) = 0;
+    virtual int getSetIdx(const Addr addr) const = 0;
+    //end
     /**
      * Regenerate an entry's address from its tag and assigned indexing bits.
      *

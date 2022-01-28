@@ -88,6 +88,10 @@ FIFO::getVictim(const ReplacementCandidates& candidates) const
 
     return victim;
 }
+ReplaceableEntry*
+FIFO::getVictim(const ReplacementCandidates& candidates, int flag) const {
+    return NULL;
+}
 
 std::shared_ptr<ReplacementData>
 FIFO::instantiateEntry()

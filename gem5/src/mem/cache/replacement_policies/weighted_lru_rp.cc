@@ -92,7 +92,10 @@ WeightedLRU::getVictim(const ReplacementCandidates& candidates) const
     }
     return victim;
 }
-
+ReplaceableEntry*
+WeightedLRU::getVictim(const ReplacementCandidates& candidates, int flag) const {
+    return NULL;
+}
 std::shared_ptr<ReplacementData>
 WeightedLRU::instantiateEntry()
 {

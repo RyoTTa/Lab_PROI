@@ -1277,21 +1277,29 @@ class Packet : public Printable
      * Copy data from the packet to the memory at the provided pointer.
      * @param p Pointer to which data will be copied.
      */
+    // yongjun : 실제 데이터 write 수행
     void
     writeData(uint8_t *p) const
     {
         if (!isMaskedWrite()) {
+            //std::cout << "Masked write : get size : " <<getSize() << "\n";
+            //  1. dest 2. source
             std::memcpy(p, getConstPtr<uint8_t>(), getSize());
         } else {
             assert(req->getByteEnable().size() == getSize());
             // Write only the enabled bytes
+            // yongjun : packet data
             const uint8_t *base = getConstPtr<uint8_t>();
+            //std::cout << "get size : " <<getSize() << "\n";
             for (int i = 0; i < getSize(); i++) {
                 if (req->getByteEnable()[i]) {
+                    // yongjun : 업데이트 되는 데이터
+                    //std::cout << *(base + i) << " ";
                     p[i] = *(base + i);
                 }
                 // Disabled bytes stay untouched
             }
+            //std::cout << "\n";
         }
     }
 

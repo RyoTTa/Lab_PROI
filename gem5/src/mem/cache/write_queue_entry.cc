@@ -85,7 +85,7 @@ WriteQueueEntry::TargetList::print(std::ostream &os, int verbosity,
         t.pkt->print(os, verbosity, "");
     }
 }
-
+//yongjun : write buffer allocate
 void
 WriteQueueEntry::allocate(Addr blk_addr, unsigned blk_size, PacketPtr target,
                           Tick when_ready, Counter _order)

@@ -220,7 +220,16 @@ class FALRU : public BaseTags
     CacheBlk* findVictim(Addr addr, const bool is_secure,
                          const std::size_t size,
                          std::vector<CacheBlk*>& evict_blks) override;
-
+    //yongjun
+    void updataLocalCounterToTags(Addr addr, int is_hit){
+        return;
+    }
+    void writeHitL2_PROI(Addr addr, std::vector<CacheBlk*>& evict_blks, int flag){
+        return;
+    }
+    int getIsInvalid(){
+        return 1;
+    }
     /**
      * Insert the new block into the cache and update replacement data.
      *

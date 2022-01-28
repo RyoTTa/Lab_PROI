@@ -59,7 +59,8 @@ BaseSetAssoc::BaseSetAssoc(const Params &p)
 {
     // There must be a indexing policy
     fatal_if(!p.indexing_policy, "An indexing policy is required");
-
+    //yongjun : params name init
+    params_name = p.name;
     // Check parameters
     if (blkSize < 4 || !isPowerOf2(blkSize)) {
         fatal("Block size must be at least 4 and a power of 2");
@@ -84,7 +85,7 @@ BaseSetAssoc::tagsInit()
         blk->replacementData = replacementPolicy->instantiateEntry();
     }
 }
-
+// yongjun : invalidate
 void
 BaseSetAssoc::invalidate(CacheBlk *blk)
 {
@@ -93,7 +94,7 @@ BaseSetAssoc::invalidate(CacheBlk *blk)
     // Decrease the number of tags in use
     stats.tagsInUse--;
 
-    // Invalidate replacement data
+    // Invalidate replacement data, yongjun : last touch to zero
     replacementPolicy->invalidate(blk->replacementData);
 }
 

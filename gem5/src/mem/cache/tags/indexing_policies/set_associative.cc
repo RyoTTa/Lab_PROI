@@ -63,16 +63,40 @@ SetAssociative::extractSet(const Addr addr) const
 }
 
 Addr
-SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
-                                                                        const
+SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry) const
 {
     return (tag << tagShift) | (entry->getSet() << setShift);
 }
-
+//yongjun : load set lists
 std::vector<ReplaceableEntry*>
 SetAssociative::getPossibleEntries(const Addr addr) const
 {
     return sets[extractSet(addr)];
 }
+//yongjun : local counter return
+int
+SetAssociative::getLocalCounter(const Addr addr) const
+{
+    return local_counter[extractSet(addr)];
+}
+
+void
+SetAssociative::updateLocalCounter(const Addr addr, int is_hit)
+{
+    if(is_hit) {
+        if(local_counter[extractSet(addr)] < 16)
+            local_counter[extractSet(addr)]++;
+    }
+    else { // MISS
+        if(local_counter[extractSet(addr)] > 0)
+            local_counter[extractSet(addr)]--;
+    }
+}
+int
+SetAssociative::getSetIdx(const Addr addr) const
+{
+    return extractSet(addr);
+}
+// end
 
 } // namespace gem5

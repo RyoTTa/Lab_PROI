@@ -69,6 +69,7 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
     for (uint32_t i = 0; i < numSets; ++i) {
         sets[i].resize(assoc);
     }
+    //local_counter = {0,};
 }
 
 ReplaceableEntry*

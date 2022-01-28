@@ -103,7 +103,9 @@ class Base : public SimObject
      */
     virtual ReplaceableEntry* getVictim(
                            const ReplacementCandidates& candidates) const = 0;
-
+    // yongjun : getVictim_deadblock
+    virtual ReplaceableEntry* getVictim(
+            const ReplacementCandidates& candidates, int flag) const = 0;
     /**
      * Instantiate a replacement data entry.
      *

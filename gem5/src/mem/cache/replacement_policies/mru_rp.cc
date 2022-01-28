@@ -95,7 +95,10 @@ MRU::getVictim(const ReplacementCandidates& candidates) const
 
     return victim;
 }
-
+ReplaceableEntry*
+MRU::getVictim(const ReplacementCandidates& candidates, int flag) const {
+    return NULL;
+}
 std::shared_ptr<ReplacementData>
 MRU::instantiateEntry()
 {

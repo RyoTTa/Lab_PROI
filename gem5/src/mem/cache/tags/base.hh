@@ -86,7 +86,10 @@ class BaseTags : public ClockedObject
     System *system;
 
     /** Indexing policy */
+
     BaseIndexingPolicy *indexingPolicy;
+    //yongjun : old data list
+    uint8_t oldDataDeadblock[8192] ={0,};
 
     /**
      * The number of tags that need to be touched to meet the warmup
@@ -113,6 +116,9 @@ class BaseTags : public ClockedObject
         void preDumpStats() override;
 
         BaseTags &tags;
+        //yongjun : add STAT deadblcok
+        statistics::Scalar deadblock;
+        statistics::Scalar Nondeadblock;
 
         /** Per tick average of the number of tags that hold valid data. */
         statistics::Average tagsInUse;
@@ -160,6 +166,7 @@ class BaseTags : public ClockedObject
   public:
     typedef BaseTagsParams Params;
     BaseTags(const Params &p);
+
 
     /**
      * Destructor.
@@ -251,6 +258,7 @@ class BaseTags : public ClockedObject
      *
      * @param blk A valid block to invalidate.
      */
+     //yongjun : tags : invalidate
     virtual void invalidate(CacheBlk *blk)
     {
         assert(blk);
@@ -259,7 +267,7 @@ class BaseTags : public ClockedObject
         stats.occupancies[blk->getSrcRequestorId()]--;
         stats.totalRefs += blk->getRefCount();
         stats.sampledRefs++;
-
+        //yongjun : invalidate
         blk->invalidate();
     }
 
@@ -278,9 +286,16 @@ class BaseTags : public ClockedObject
      * @param evict_blks Cache blocks to be evicted.
      * @return Cache block to be replaced.
      */
+     //yongjun : local counter
+    virtual void updataLocalCounterToTags(Addr addr, int is_hit) = 0;
     virtual CacheBlk* findVictim(Addr addr, const bool is_secure,
                                  const std::size_t size,
                                  std::vector<CacheBlk*>& evict_blks) = 0;
+    //yonjun : proi
+    virtual void writeHitL2_PROI(Addr addr, std::vector<CacheBlk*>& evict_blks, int flag) =0;
+    virtual int getIsInvalid() =0;
+    //end
+
 
     /**
      * Access block and update replacement data. May not succeed, in which case

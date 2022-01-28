@@ -49,6 +49,8 @@
 #include <cassert>
 #include <cstdint>
 #include <string>
+#include <iostream>
+#include <bitset>
 #include <cmath>
 
 #include "base/addr_range.hh"
@@ -108,6 +110,17 @@ class BaseCache : public ClockedObject
   public:
 
     //Adding Part Start
+    //std::string params_name;
+
+
+    char old_blk[512];
+    char new_blk[512];
+    //Adding Part End
+    /**
+     * Reasons for caches to be blocked.
+     */
+    //yongho
+    //Adding Part Start
     Cycles *bankAvailableCycles;
 
     inline int calcBankAddr(Addr addr){
@@ -137,9 +150,6 @@ class BaseCache : public ClockedObject
         }
     }
     //Adding Part End
-    /**
-     * Reasons for caches to be blocked.
-     */
     enum BlockedCause
     {
         Blocked_NoMSHRs = MSHRQueue_MSHRs,
@@ -163,7 +173,7 @@ class BaseCache : public ClockedObject
         std::vector<uint64_t> oldData;
         /** The new data contents. If zero-sized this is an invalidation. */
         std::vector<uint64_t> newData;
-
+        //yongjun : Dataupdate old, newdata
         DataUpdate(Addr _addr, bool is_secure)
           : addr(_addr), isSecure(is_secure), oldData(), newData()
         {
@@ -369,7 +379,7 @@ class BaseCache : public ClockedObject
 
     CpuSidePort cpuSidePort;
     MemSidePort memSidePort;
-
+    //yongho
     //Adding Part Start
     std::string params_name;
     int bankNumber;
@@ -659,9 +669,13 @@ class BaseCache : public ClockedObject
      */
     void updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
         bool has_old_data);
-
+    // yongjun 함수 정의 추가
     void updateBlockDataForL2(CacheBlk *blk, const PacketPtr cpkt,
         bool has_old_data);
+    void updateBlockDataForL2_mem(CacheBlk *blk, const PacketPtr cpkt,
+                              bool has_old_data);
+    void print_blk(const void* blk, int len, int is_old, int is_mem);
+    void change_state(int len);
 
     /**
      * Handle doing the Compare and Swap function for SPARC.
@@ -949,6 +963,7 @@ class BaseCache : public ClockedObject
     /** The latency to fill a cache block */
     const Cycles fillLatency;
 
+    //yongho
     const Cycles writeLatency;
 
     /**
@@ -1086,21 +1101,28 @@ class BaseCache : public ClockedObject
             return *cmd[p->cmdToIndex()];
         }
 
-        const BaseCache &cache;
+        const BaseCache &cache;\
+        //yongjun : statics 변수
+        statistics::Scalar zeroNum;
+        statistics::Scalar oneNum;
+        statistics::Scalar narrowWidth;
+        statistics::Scalar NonNarrowWidth;
+        statistics::Scalar zeroToOne;
+        statistics::Scalar oneToZero;
+        statistics::Scalar oneToOne;
+        statistics::Scalar zeroToZero;
 
-        //Adding Part Start
+        statistics::Scalar zeroToZero_preset;
+        statistics::Scalar zeroToOne_preset;
+        statistics::Scalar narrowWidth_preset;
+        statistics::Scalar NonNarrowWidth_preset;
+        statistics::Scalar DeadblockCount;
 
-        /** Number of Write. */
-        statistics::Scalar writeNumber;
-        /** Number of Read. */
-        statistics::Scalar readNumber;
-        /** Number of Writeback. */
-        statistics::Scalar writebackNumber;
-        /** Number of Handlefill. */
-        statistics::Scalar handlefillNumber;
-        /** Number of Service MSHR. */
-        statistics::Scalar serviceMSHRNumber;
-        //Adding Part End
+        statistics::Scalar fastwrite;
+        statistics::Scalar slowwrite;
+
+
+        //end
 
         /** Number of hits for demand accesses. */
         statistics::Formula demandHits;
@@ -1226,6 +1248,14 @@ class BaseCache : public ClockedObject
         if (mshrQueue.isFull()) {
             setBlocked((BlockedCause)MSHRQueue_MSHRs);
         }
+        //yongjun
+        //mshr blocking
+        /*if (mshr->getNumTargets() == numTarget) {
+            //cout << "Blocked: " << name() << endl;
+            noTargetMSHR = mshr;
+            setBlocked(Blocked_NoTargets);
+        }*/
+        //end
 
         if (sched_send) {
             // schedule the send
@@ -1256,7 +1286,7 @@ class BaseCache : public ClockedObject
         if (wq_entry && !wq_entry->inService) {
             DPRINTF(Cache, "Potential to merge writeback %s", pkt->print());
         }
-
+        //yongjun : allocate write buffer, forward time
         writeBuffer.allocate(blk_addr, blkSize, pkt, time, order++);
 
         if (writeBuffer.isFull()) {

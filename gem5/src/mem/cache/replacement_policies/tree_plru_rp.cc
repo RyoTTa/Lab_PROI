@@ -195,6 +195,10 @@ TreePLRU::getVictim(const ReplacementCandidates& candidates) const
     // number of non-leaf nodes
     return candidates[tree_index - (numLeaves - 1)];
 }
+ReplaceableEntry*
+TreePLRU::getVictim(const ReplacementCandidates& candidates, int flag) const {
+    return NULL;
+}
 
 std::shared_ptr<ReplacementData>
 TreePLRU::instantiateEntry()

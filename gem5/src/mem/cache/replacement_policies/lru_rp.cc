@@ -33,7 +33,6 @@
 
 #include "params/LRURP.hh"
 #include "sim/cur_tick.hh"
-
 namespace gem5
 {
 
@@ -44,8 +43,9 @@ namespace replacement_policy
 LRU::LRU(const Params &p)
   : Base(p)
 {
+    params_name = p.name;
 }
-
+//yongjun : invalidate
 void
 LRU::invalidate(const std::shared_ptr<ReplacementData>& replacement_data)
 {
@@ -69,27 +69,112 @@ LRU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
     std::static_pointer_cast<LRUReplData>(
         replacement_data)->lastTouchTick = curTick();
 }
-
 ReplaceableEntry*
 LRU::getVictim(const ReplacementCandidates& candidates) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);
-
+    int is_change = 0;
+    ReplaceableEntry* victim_prev;
     // Visit all candidates to find victim
     ReplaceableEntry* victim = candidates[0];
     for (const auto& candidate : candidates) {
+        is_change = 0;
         // Update victim entry if necessary
-        if (std::static_pointer_cast<LRUReplData>(
-                    candidate->replacementData)->lastTouchTick <
-                std::static_pointer_cast<LRUReplData>(
-                    victim->replacementData)->lastTouchTick) {
+        if (std::static_pointer_cast<LRUReplData>(candidate->replacementData)->lastTouchTick <
+                std::static_pointer_cast<LRUReplData>(victim->replacementData)->lastTouchTick) {
             victim = candidate;
         }
     }
-
     return victim;
 }
+//yongjun LRU victim : get_victim from base_set_assoc.hh
+ReplaceableEntry*
+LRU::getVictim(const ReplacementCandidates& candidates, int flag) const {
+    // There must be at least one replacement candidate
+    assert(candidates.size() > 0);
+    // yongjun : IF NOT L2 Cache Return NULL
+    if (params_name != "system.l2.replacement_policy") return NULL;
+
+    int is_change = 0;
+    ReplaceableEntry *victim_dead = NULL;
+    ReplaceableEntry *victim_prev = NULL;
+    // Visit all candidates to find victim
+    ReplaceableEntry *victim = candidates[0];
+    for (const auto &candidate: candidates) {
+        is_change = 0;
+        //CacheBlk* valid_test = candidate;
+        //bool valid_bit = valid_test->isValid();
+        // Update victim entry if necessary
+        //std::cout<< params_name << "\n";
+        //if (params_name == "system.l2.replacement_policy") i++;
+        //std::cout << "cadidate lastTouch : "
+        //          << std::static_pointer_cast<LRUReplData>(candidate->replacementData)->lastTouchTick << "\n";
+        //yongjun : if same touch change victim
+        if (std::static_pointer_cast<LRUReplData>(candidate->replacementData)->lastTouchTick <
+            std::static_pointer_cast<LRUReplData>(victim->replacementData)->lastTouchTick) {
+            // yongjun : set flag and save prev_victim
+            is_change = 1;
+            victim_prev = victim;
+
+            victim = candidate;
+        }
+        if (is_change) { //
+            victim_dead = victim_prev;
+        }
+    }
+    /*
+    std::cout << "victim lastTouch : "
+              << std::static_pointer_cast<LRUReplData>(victim->replacementData)->lastTouchTick << "\n";
+    std::cout << "dead block lastTouch : "
+              << std::static_pointer_cast<LRUReplData>(victim->replacementData)->lastTouchTick << "\n";
+    std::cout<<"=== end === " <<'\n';
+     */
+
+    //if (params_name == "system.l2.replacement_policy") std::cout << "candidate cnt : " << i << "\n";
+    return victim_dead;
+}
+
+/*
+std::tuple<ReplaceableEntry*, ReplaceableEntry*>
+LRU::getVictim_deadblock(const ReplacementCandidates& candidates) const
+{
+    // There must be at least one replacement candidate
+    assert(candidates.size() > 0);
+    int is_change = 0;
+    ReplaceableEntry* victim_dead = NULL;
+    ReplaceableEntry* victim_prev;
+    //ReplaceableEntry* victim_list[10];
+    // Visit all candidates to find victim
+    ReplaceableEntry* victim = candidates[0];
+    for (const auto& candidate : candidates) {
+        is_change = 0;
+        // Update victim entry if necessary
+        //std::cout<< params_name << "\n";
+        //if (params_name == "system.l2.replacement_policy") i++;
+
+        std::cout << "cadidate lastTouch : "<<std::static_pointer_cast<LRUReplData>(candidate->replacementData)->lastTouchTick << "\n";
+        std::cout << "victim lastTouch : "  <<std::static_pointer_cast<LRUReplData>(victim->replacementData)->lastTouchTick << "\n";
+        if (std::static_pointer_cast<LRUReplData>(candidate->replacementData)->lastTouchTick <
+            std::static_pointer_cast<LRUReplData>(victim->replacementData)->lastTouchTick) {
+            // yongjun : set flag and save prev_victim
+            is_change = 1;
+            victim_prev = victim;
+
+            victim = candidate;
+        }
+        if(is_change){ //
+            victim_dead = victim_prev;
+        }
+
+    }
+    //victim_list[0] = victim;
+    //victim_list[1] = victim_dead;
+    //if (params_name == "system.l2.replacement_policy") std::cout << "candidate cnt : " << i << "\n";
+    //return victim;
+    return {victim,victim_dead};
+}
+*/
 
 std::shared_ptr<ReplacementData>
 LRU::instantiateEntry()

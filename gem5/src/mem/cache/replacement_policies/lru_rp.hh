@@ -63,6 +63,8 @@ class LRU : public Base
 
   public:
     typedef LRURPParams Params;
+    //yongjun : LRU params for l2
+    std::string params_name;
     LRU(const Params &p);
     ~LRU() = default;
 
@@ -101,7 +103,8 @@ class LRU : public Base
      */
     ReplaceableEntry* getVictim(const ReplacementCandidates& candidates) const
                                                                      override;
-
+    ReplaceableEntry* getVictim(const ReplacementCandidates& candidates, int flag) const override;
+    //std::tuple<ReplaceableEntry*, ReplaceableEntry*> getVictim_deadblock(const ReplacementCandidates& candidates) const;
     /**
      * Instantiate a replacement data entry.
      *

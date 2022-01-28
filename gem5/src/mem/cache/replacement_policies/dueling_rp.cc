@@ -172,7 +172,10 @@ Dueling::getVictim(const ReplacementCandidates& candidates) const
 
     return victim;
 }
-
+ReplaceableEntry*
+Dueling::getVictim(const ReplacementCandidates& candidates, int flag) const {
+    return NULL;
+}
 std::shared_ptr<ReplacementData>
 Dueling::instantiateEntry()
 {

@@ -61,7 +61,10 @@ class PowerState(SimObject):
 
     # Provide initial power state, should ideally get redefined in startup
     # routine
+
+    # yongjun : power
     default_state = Param.PwrState("UNDEFINED", "Default Power State")
+    #default_state = Param.PwrState("ON", "Default Power State")
 
     # Possible power states this object can be in sorted from the most
     # to the least performant

@@ -142,6 +142,11 @@ BRRIP::getVictim(const ReplacementCandidates& candidates) const
     return victim;
 }
 
+ReplaceableEntry*
+BRRIP::getVictim(const ReplacementCandidates& candidates, int flag) const {
+    return NULL;
+}
+
 std::shared_ptr<ReplacementData>
 BRRIP::instantiateEntry()
 {
